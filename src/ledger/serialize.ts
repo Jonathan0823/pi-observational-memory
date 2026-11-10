@@ -145,8 +145,8 @@ function isSourceRenderableEntry(entry: RenderableEntry): boolean {
 
 /**
  * Serialize a slice of source entries into an observer prompt chunk, each block prefixed
- * with its source entry id. v1 observations carry no `sourceEntryIds`, but the labels keep
- * the chunk readable and let the orchestrator anchor timestamps to bounding source entries.
+ * with its source entry id. The orchestrator stores the first and last rendered source ids in
+ * each resulting observation's source range.
  */
 export function serializeSourceAddressedBranchEntries(entries: RenderableEntry[]): SourceAddressedSerialization {
 	const blocks: string[] = [];

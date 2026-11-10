@@ -11,6 +11,7 @@ import {
 	OM_COST,
 	OM_OBSERVATIONS_RECORDED,
 	type Entry,
+	type ObservationSourceRange,
 	type SourceSlice,
 } from "../ledger/index.js";
 import type { Runtime } from "../runtime.js";
@@ -20,7 +21,7 @@ import { readObserverResult, readWorkerCost, runCostPath, runResultPath } from "
 type TriggerCtx = {
 	hasUI: boolean;
 	ui?: { notify: (message: string, level?: "info" | "warning" | "error") => void };
-	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[] };
+	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[]; getSessionId: () => string };
 	getContextUsage?: () => { tokens: number | null } | undefined;
 };
 
@@ -69,7 +70,12 @@ function effectiveWatermarkId(runtime: Runtime, branch: Entry[]): string | undef
  * backlog and concurrency for. Pure dispatch: each observer is awaited inside its own async
  * task tracked in `runtime.observersInFlight`, never blocking the event handler.
  */
-export function evaluateObserverTriggers(pi: ExtensionAPI, runtime: Runtime, ctx: TriggerCtx): void {
+export function evaluateObserverTriggers(
+	pi: ExtensionAPI,
+	runtime: Runtime,
+	ctx: TriggerCtx,
+	workerLauncher: typeof spawnWorker = spawnWorker,
+): void {
 	if (!runtime.enabled || runtime.config.passive) return;
 
 	const hasUI = ctx.hasUI;
@@ -95,7 +101,7 @@ export function evaluateObserverTriggers(pi: ExtensionAPI, runtime: Runtime, ctx
 
 		runtime.dispatchedCoversUpToId = slice.coversUpToId;
 		runtime.trackObserverTask(
-			dispatchObserver(pi, runtime, { hasUI, ui, sessionManager, getContextUsage: ctx.getContextUsage }, slice),
+			dispatchObserver(pi, runtime, { hasUI, ui, sessionManager, getContextUsage: ctx.getContextUsage }, slice, workerLauncher),
 		);
 		if (hasUI) startToastLines.push(`om: observer started (~${slice.tokens.toLocaleString()} tok)`);
 	}
@@ -109,20 +115,31 @@ async function dispatchObserver(
 	runtime: Runtime,
 	ctx: TriggerCtx,
 	slice: SourceSlice,
+	workerLauncher: typeof spawnWorker,
 ): Promise<void> {
 	const runId = nextRunId();
 	const controller = new AbortController();
 	const coversUpToId = slice.coversUpToId!;
 	runtime.observersInFlight.set(runId, { controller, coversUpToId });
 
-	const { text: chunkText } = serializeSourceAddressedBranchEntries(slice.entries);
-	const lastEntry = slice.entries.at(-1);
-
 	// Start toast is fired as a batch by evaluateObserverTriggers after the dispatch
 	// loop, not here, so simultaneous starts coalesce into one multi-line notify.
 	runtime.status.workerStart("observer", runId);
 
 	try {
+		const { text: chunkText, sourceEntryIds } = serializeSourceAddressedBranchEntries(slice.entries);
+		const lastEntry = slice.entries.at(-1);
+		const firstSourceEntryId = sourceEntryIds[0];
+		const lastSourceEntryId = sourceEntryIds.at(-1);
+		if (!firstSourceEntryId || !lastSourceEntryId) {
+			throw new Error(`observer chunk ${runId} has no serialized source entries`);
+		}
+		const sourceRange: ObservationSourceRange = {
+			sessionId: ctx.sessionManager.getSessionId(),
+			firstEntryId: firstSourceEntryId,
+			lastEntryId: lastSourceEntryId,
+		};
+
 		// The chunk IS the recorded user prompt (passed via `pi -p`), not an ephemeral
 		// context-hook injection. This keeps the observer session faithfully inspectable on
 		// resume — the whole point of running workers as recorded global sessions (decision 11).
@@ -150,7 +167,7 @@ async function dispatchObserver(
 			kickoffPrompt: userText,
 		});
 		const env = buildWorkerEnv("observer", { memoryRoot: runtime.memoryRoot, runId });
-		const exit = await spawnWorker({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
+		const exit = await workerLauncher({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
 		recordWorkerCost(pi, runtime, ctx, "observer", runId);
 		if (exit.code !== 0) {
@@ -163,7 +180,7 @@ async function dispatchObserver(
 		const observations = assignObservationTimestamps(result.observations, {
 			used,
 			fallbackAnchor: lastEntry?.timestamp,
-		});
+		}).map((observation) => ({ ...observation, sourceRange }));
 
 		if (observations.length > 0) {
 			pi.appendEntry(OM_OBSERVATIONS_RECORDED, { observations, coversUpToId });
@@ -191,8 +208,12 @@ async function dispatchObserver(
 	}
 }
 
-export function registerObserverTrigger(pi: ExtensionAPI, runtime: Runtime): void {
-	const handler = (_event: unknown, ctx: TriggerCtx) => evaluateObserverTriggers(pi, runtime, ctx);
+export function registerObserverTrigger(
+	pi: ExtensionAPI,
+	runtime: Runtime,
+	workerLauncher: typeof spawnWorker = spawnWorker,
+): void {
+	const handler = (_event: unknown, ctx: TriggerCtx) => evaluateObserverTriggers(pi, runtime, ctx, workerLauncher);
 	pi.on("turn_end", handler as never);
 	pi.on("agent_start", handler as never);
 }
