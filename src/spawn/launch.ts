@@ -77,13 +77,19 @@ export function spawnWorker(opts: {
 	signal?: AbortSignal;
 }): Promise<WorkerExit> {
 	const [command, ...rest] = opts.argv;
+	// Pi records piped stdin as its kickoff message. Linux limits each individual
+	// argv argument to roughly 128 KiB, which a 60k-token chunk can exceed.
+	const prompt = rest.length >= 2 && rest.at(-2) === "-p" ? rest.pop() : undefined;
 	mkdirSync(opts.cwd, { recursive: true });
 	return new Promise<WorkerExit>((resolvePromise) => {
 		const proc = spawn(command, rest, {
 			cwd: opts.cwd,
 			env: opts.env,
-			stdio: ["ignore", "ignore", "pipe"],
+			stdio: [prompt === undefined ? "ignore" : "pipe", "ignore", "pipe"],
 		});
+		// Failed launches may close stdin early; process handlers report the failure.
+		proc.stdin?.on("error", () => {});
+		if (prompt !== undefined) proc.stdin?.end(prompt);
 		let stderr = "";
 		proc.stderr?.on("data", (d: Buffer) => {
 			stderr += d.toString();
