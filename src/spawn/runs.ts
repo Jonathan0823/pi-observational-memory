@@ -1,9 +1,9 @@
 /**
  * File-based IPC between the in-process orchestrator and subprocess workers.
  *
- * A subprocess cannot append to the master's ledger, so it writes its output to a transient
- * result file under `<project>/.memory/.runs/<runId>.json`. The orchestrator reads + validates
- * it after the process exits, then commits to the right tier (observations → ledger).
+ * A subprocess cannot append to the master's ledger, so it writes role-specific output to a
+ * transient `<runId>.result.json` file under the session memory root's `.runs/`. The orchestrator
+ * reads and validates it after the process exits before committing observations or tombstones.
  *
  * Worker recordings themselves live in pi's GLOBAL session store, not here (decision 11).
  * `.memory/.runs/` clutter is not GC'd in v1 (accepted).
@@ -25,6 +25,7 @@ export function runsDir(root: string): string {
 	return join(root, ".runs");
 }
 
+/** Shared role-specific worker result path under the session memory root's transient `.runs/`. */
 export function runResultPath(root: string, runId: string): string {
 	return join(runsDir(root), `${runId}.result.json`);
 }
@@ -40,6 +41,14 @@ export function runCostPath(root: string, runId: string): string {
 
 export type WorkerCostResult = {
 	costUsd: number;
+};
+
+export type ConsolidationDecision =
+	| { timestamp: string; outcome: "saved"; topicPath: string }
+	| { timestamp: string; outcome: "discarded"; reason: string };
+
+export type ConsolidatorRunResult = {
+	decisions: ConsolidationDecision[];
 };
 
 export function writeWorkerCost(path: string, cost: WorkerCostResult): void {
@@ -84,5 +93,35 @@ export function readObserverResult(path: string): ObserverRunResult {
 }
 
 export function writeObserverResult(path: string, result: ObserverRunResult): void {
+	atomicWrite(path, JSON.stringify(result));
+}
+
+/** Parse + validate the consolidator's per-observation accounting report. */
+export function readConsolidatorResult(path: string): ConsolidatorRunResult {
+	const raw = JSON.parse(readFileSync(path, "utf-8")) as unknown;
+	if (!raw || typeof raw !== "object" || !Array.isArray((raw as { decisions?: unknown }).decisions)) {
+		throw new Error("consolidator report missing decisions array");
+	}
+	const decisions: ConsolidationDecision[] = [];
+	for (const item of (raw as { decisions: unknown[] }).decisions) {
+		if (!item || typeof item !== "object") throw new Error("consolidator report contains an invalid decision");
+		const value = item as Record<string, unknown>;
+		if (typeof value.timestamp !== "string" || value.timestamp.trim().length === 0) {
+			throw new Error("consolidator report decision missing observation timestamp");
+		}
+		if (value.outcome === "saved" && typeof value.topicPath === "string" && value.topicPath.trim().length > 0) {
+			decisions.push({ timestamp: value.timestamp, outcome: "saved", topicPath: value.topicPath });
+			continue;
+		}
+		if (value.outcome === "discarded" && typeof value.reason === "string" && value.reason.trim().length > 0) {
+			decisions.push({ timestamp: value.timestamp, outcome: "discarded", reason: value.reason });
+			continue;
+		}
+		throw new Error(`consolidator report has invalid outcome or missing details for ${value.timestamp}`);
+	}
+	return { decisions };
+}
+
+export function writeConsolidatorResult(path: string, result: ConsolidatorRunResult): void {
 	atomicWrite(path, JSON.stringify(result));
 }

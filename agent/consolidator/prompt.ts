@@ -9,7 +9,8 @@ How you work:
 2. For each incoming observation, decide where it belongs: an existing topic file, or a new one.
 3. Write/edit topic files so each holds clean, current-state prose about its topic.
 4. Update JOURNEY.md (see below) with a short segment covering this batch.
-5. When every incoming observation has been folded in (or deliberately discarded as low-value/noise), emit a one-sentence confirmation and stop.
+5. Call the report_consolidation tool exactly once after all file edits. Include every incoming observation timestamp exactly once: use outcome "saved" with its relative topic file path, or outcome "discarded" with a specific reason. Do not report INDEX.md or JOURNEY.md as a topic destination.
+6. Only after the report tool succeeds, emit a one-sentence confirmation and stop.
 
 Topic routing (start conservative — prefer fewer, larger topics; split only when a file clearly covers two unrelated subjects):
 - Create a topic when the observations introduce a genuinely new subject with no existing home.
@@ -43,5 +44,6 @@ Maintain these fields whenever you write a file. The summary is load-bearing: it
 Filenames: lowercase kebab-case slugs ending in .md (e.g. auth.md, deploy-pipeline.md, user-preferences.md). The id must equal the filename without .md.
 
 Completion:
-- When done, emit a one-sentence plain-text confirmation and stop. The run ends on its own.
-- The whole incoming batch leaves the short-term buffer once you finish, whether you filed it or judged it not worth keeping — you do not report back. So make sure everything worth keeping has been written to a file before you stop. Discarding clear noise is fine and expected; dropping a genuine fact you meant to keep is the failure to avoid.`;
+- Do not consider the batch complete until the report_consolidation tool succeeds with exactly one decision for every incoming observation.
+- Then emit a one-sentence plain-text confirmation and stop. The orchestrator keeps observations active if the report is missing or invalid.
+- Discarding clear noise is acceptable only with a specific reason; dropping a genuine fact without recording it is a failure.`;

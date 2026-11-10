@@ -25,14 +25,26 @@ describe("registerConsolidatorTools (scoped to .memory/)", () => {
 		memoryRoot = join(cwd, ".memory");
 		tools = new Map();
 		const fakePi = { registerTool: (def: any) => tools.set(def.name, def) } as any;
-		registerConsolidatorTools(fakePi, memoryRoot);
+		registerConsolidatorTools(fakePi, memoryRoot, join(cwd, ".runs", "cons.result.json"));
 	});
 	afterEach(() => {
 		rmSync(cwd, { recursive: true, force: true });
 	});
 
-	it("registers the scoped tool belt (no terminal report tool)", () => {
-		expect([...tools.keys()].sort()).toEqual(["edit", "grep", "ls", "read", "write"].sort());
+	it("registers only scoped memory and report tools", () => {
+		expect([...tools.keys()].sort()).toEqual(["edit", "grep", "ls", "read", "report_consolidation", "write"].sort());
+	});
+
+	it("writes a structured accounting report", async () => {
+		const report = {
+			decisions: [
+				{ timestamp: "obs-1", outcome: "saved", topicPath: "auth.md" },
+				{ timestamp: "obs-2", outcome: "discarded", reason: "superseded" },
+			],
+		};
+		const result = await tools.get("report_consolidation").execute("1", report);
+		expect(result.content[0].text).toContain("Reported 2 observation decisions");
+		expect(JSON.parse(readFileSync(join(cwd, ".runs", "cons.result.json"), "utf-8"))).toEqual(report);
 	});
 
 	it("write then read a topic file", async () => {
