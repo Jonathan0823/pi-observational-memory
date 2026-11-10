@@ -71,7 +71,9 @@ describe("visibleProjection", () => {
 			}),
 			textCustomMessage("raw-2", "bbbb"),
 		];
-		expect(visibleProjection(entries).observations.map((o) => o.timestamp)).toEqual(["2026-05-02T10:00:01"]);
+		const visible = visibleProjection(entries).observations;
+		expect(visible.map((o) => o.timestamp)).toEqual(["2026-05-02T10:00:01"]);
+		expect(visible[0]?.sourceRange).toBeUndefined();
 	});
 
 	it("returns empty when there is no compaction", () => {

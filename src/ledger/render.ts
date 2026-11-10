@@ -7,9 +7,12 @@ const CONTEXT_USAGE_INSTRUCTIONS = `These are condensed memories from earlier in
 
 Treat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.`;
 
-/** A single observation line: "YYYY-MM-DDTHH:MM:SS  content". The timestamp is the id. */
+/** Render an observation with its recoverable source range when available. */
 export function observationToLine(observation: Observation): string {
-	return `${observation.timestamp}  ${observation.content}`;
+	const source = observation.sourceRange
+		? ` [source session:${observation.sourceRange.sessionId} entries:${observation.sourceRange.firstEntryId}..${observation.sourceRange.lastEntryId}]`
+		: "";
+	return `${observation.timestamp}${source}  ${observation.content}`;
 }
 
 /** Sort observations chronologically by their timestamp-id (lexicographic == chronological). */

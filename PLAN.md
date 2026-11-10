@@ -129,20 +129,16 @@ type Observation = {
   timestamp: string;   // "YYYY-MM-DDTHH:MM:SS[.NN]" — orchestrator-assigned id+time
   content: string;     // single-line plain prose
   tokenCount: number;  // computed in code, not by the model
+  sourceRange?: { sessionId: string; firstEntryId: string; lastEntryId: string };
 };
 ```
 
 The observer model emits `{ timestamp: "YYYY-MM-DD HH:MM", content }` (minute resolution,
-OM-proven). The orchestrator, at commit, **re-derives** a precise, unique id-timestamp:
-- anchor to the source entry the observation cites (or the chunk's time span midpoint if no
-  cite in v1's no-`sourceEntryIds` world → use the chunk's bounding source-entry timestamps),
-- ensure strict uniqueness across the committed batch by appending `.01`, `.02`, … when two
-  observations resolve to the same second.
-
-> v1 has no `sourceEntryIds` in the stored unit (decision 9). To anchor timestamps the
-> orchestrator uses the **chunk boundary source-entry times** it already knows (it built the
-> chunk), distributing observations across that span in model-emitted order. Exact per-obs
-> source attribution returns with the critic/drill-to-source tier (post-v1).
+OM-proven). At commit, the orchestrator derives a unique id-timestamp and attaches the immutable
+source session id plus the first and last rendered source-entry ids from the observer chunk to
+each observation. `sourceRange` is optional so entries recorded before source-range support remain
+readable. The range is chunk-level provenance, not a claim that the whole observation came from
+one cited message.
 
 ### Ledger entries (vendored, trimmed)
 
@@ -178,8 +174,9 @@ Goal: a working observer → ledger → injection → compaction loop that is co
 - `package.json`, `tsconfig`, `vitest`. Copy the dependency set from OM's `package.json`.
 - Vendor + trim from OM: `tokens.ts`, `ids.ts` (then extend for L5), `serialize.ts`,
   `debug-log.ts`, and `ledger/{types,fold,progress,projection,render}.ts`. Strip reflections,
-  `relevance`, `sourceEntryIds`, hash-ids, dropper-specific pool logic. Keep watermark folding,
-  source-entry detection, raw-token clocks, compaction projection, deterministic render.
+  `relevance`, per-observation citations, hash-ids, and dropper-specific pool logic. Keep
+  chunk-level source ranges, watermark folding, source-entry detection, raw-token clocks,
+  compaction projection, and deterministic render.
 - Port OM's vitest suites for the kept modules; delete reflection/relevance assertions.
 
 ### A2. Orchestrator skeleton (`src/index.ts`, `runtime.ts`, `config.ts`)
@@ -279,7 +276,8 @@ pi --no-extensions --no-skills --no-prompt-templates --no-context-files \
   minute-resolution timestamp pattern). On call: accumulate; on the terminal call (model stops),
   write `OM_RUNS_DIR/OM_RUN_ID.json` = `{ observations: [...] }`, then `ctx.shutdown()`.
 - Prompt = trimmed OM observer prompt: "extract atomic events from THIS chunk; one line each;
-  no markdown; prefer inline conversation timestamps." Drop relevance/sourceEntryIds language.
+  no markdown; prefer inline conversation timestamps." Source-range metadata is attached by the
+  orchestrator, not emitted by the observer model.
 
 ### A6. Compaction (`hooks/compaction-trigger.ts`, `hooks/compaction-hook.ts`)
 - **Trigger** (`turn_end`): if context pressure `>= compactAtContextTokens` and not already

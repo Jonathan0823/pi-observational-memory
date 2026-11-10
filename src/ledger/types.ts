@@ -1,10 +1,10 @@
 /**
  * Ledger custom-type vocabulary for observational memory (v1, minimal schema).
  *
- * Trimmed from OM V3: the reflections tier, the `relevance` field, `sourceEntryIds`,
- * content-hash ids, and the usage tier are all gone. An observation is the minimal
- * `{ timestamp, content, tokenCount }`; the precise event-`timestamp` doubles as the id
- * (the orchestrator guarantees uniqueness at commit — see ../ids.ts).
+ * An observation is `{ timestamp, content, tokenCount }` plus an optional source range. The
+ * precise event-`timestamp` doubles as the id (the orchestrator guarantees uniqueness at commit —
+ * see ../ids.ts). Source ranges are optional so ledger entries written before the field existed
+ * remain readable.
  */
 
 /** Observer output committed by the orchestrator; the buffer tier. */
@@ -50,10 +50,17 @@ export type Entry = {
  * - `content`: single-line plain prose.
  * - `tokenCount`: computed in code (never by the model).
  */
+export type ObservationSourceRange = {
+	sessionId: string;
+	firstEntryId: string;
+	lastEntryId: string;
+};
+
 export type Observation = {
 	timestamp: string;
 	content: string;
 	tokenCount: number;
+	sourceRange?: ObservationSourceRange;
 };
 
 export type ObservationsRecordedEntryData = {
@@ -97,13 +104,23 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 	return !!value && typeof value === "object";
 }
 
+function isObservationSourceRange(value: unknown): value is ObservationSourceRange {
+	if (!isPlainRecord(value)) return false;
+	return (
+		isNonEmptyString(value.sessionId) &&
+		isNonEmptyString(value.firstEntryId) &&
+		isNonEmptyString(value.lastEntryId)
+	);
+}
+
 export function isObservation(value: unknown): value is Observation {
 	if (!isPlainRecord(value)) return false;
 	return (
 		isNonEmptyString(value.timestamp) &&
 		isNonEmptyString(value.content) &&
 		!/\r|\n/.test(value.content) &&
-		isTokenCount(value.tokenCount)
+		isTokenCount(value.tokenCount) &&
+		(value.sourceRange === undefined || isObservationSourceRange(value.sourceRange))
 	);
 }
 
