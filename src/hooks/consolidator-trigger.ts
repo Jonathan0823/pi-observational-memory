@@ -69,7 +69,7 @@ function buildConsolidatorPrompt(memoryRoot: string, promote: Observation[], jou
 		"===== CURRENT JOURNEY (.memory/JOURNEY.md — the running descriptive project history) =====\n" +
 		`${journeyText ?? "(empty — no journey yet; start one)"}\n` +
 		"===== END JOURNEY =====\n\n" +
-		"===== OBSERVATIONS TO CONSOLIDATE (each line is `<timestamp-id>  <content>`) =====\n" +
+		"===== OBSERVATIONS TO CONSOLIDATE (each line is `<timestamp-id> [optional source range]  <content>`) =====\n" +
 		`${obsLines}\n` +
 		"===== END OBSERVATIONS =====\n\n" +
 		"Fold every observation above into topic files (create/merge/rewrite as needed). Then update " +

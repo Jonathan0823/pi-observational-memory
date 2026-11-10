@@ -333,12 +333,12 @@ pi --no-extensions --no-skills --no-prompt-templates --no-context-files \
 
 ---
 
-## Phase B — long-term tier (consolidator + `.memory/`)
+## Phase B — durable session memory (consolidator + `.memory/`)
 
-Goal: bound the buffer and gain durable, navigable, cross-session topic files.
+Goal: bound the buffer and gain durable, navigable topic files scoped to one session.
 
 ### B1. `.memory/` substrate (`src/memory/paths.ts`)
-- `<project>/.memory/` with `INDEX.md`, `<topic>.md`, and `.runs/<runId>.result.json` / `.cost.json` worker IPC.
+- `<project>/.memory/<sessionId>/` with `INDEX.md`, `<topic>.md`, and `.runs/<runId>.result.json` / `.cost.json` worker IPC.
 - **Atomic writes**: temp file + `rename` over target so the master never reads a half-written
   file. (Consolidator edits files directly in the subprocess; same atomic helper there.)
 - Filesystem **is** the recall interface — master uses normal `ls`/`read`/`grep`; no `recall`
@@ -378,17 +378,17 @@ Goal: bound the buffer and gain durable, navigable, cross-session topic files.
 - INDEX.md on disk is (re)rendered by the orchestrator after each consolidation so live
   `ls`/`grep` truth leads the pushed map (design risk 3 — accepted).
 
-### B5b. Project journey (`JOURNEY.md`) — running descriptive history [implemented]
+### B5b. Session journey (`JOURNEY.md`) — running descriptive history [implemented]
 
-A third long-term artifact alongside the topic files and INDEX: a single, whole-project,
-free-form prose narrative of **how the project/work got to where it is**. Purpose is
+A third durable session-memory artifact alongside the topic files and INDEX: a free-form prose
+narrative of **how this session's project work got to its current state**. Purpose is
 **orientation only** — give a freshly-compacted agent the rough arc so it stays on track —
 not detailed recall (the topic files hold detail).
 
 - **File:** `.memory/JOURNEY.md`. Consolidator-authored plain markdown, **no front-matter**.
   A special file like INDEX.md: **excluded** from `listTopics`/the memory map, never a topic.
-- **Tier rules:** same as topic files — file-backed, shared across sessions, does **not** roll
-  back under `/tree`.
+- **Tier rules:** same as topic files — file-backed, scoped to the session, and does **not** roll
+  back under `/tree`. A fork may inherit a copy; unrelated sessions do not share these files.
 - **Pushed, not pull-only:** rendered **verbatim from disk** into the compaction block as a
   new first section (`## Journey`), before the memory map and observations. So post-compaction
   the agent sees `journey` (settled past) → `map` (current topics) → `observations` (recent) →
@@ -417,7 +417,7 @@ not detailed recall (the topic files hold detail).
 ### B5. Phase B acceptance
 - Buffer stays bounded near `poolTargetTokens`; consolidation drains overflow into topic files.
 - Topic files are clean current-state prose; rewrites are atomic; master can `grep` them.
-- Cross-session: a second session in the same project reads the same `.memory/` files.
+- Session-scoped: a resumed session reads the same `.memory/<sessionId>/` files; unrelated sessions do not share them.
 - `/tree` past a consolidation re-activates promoted observations in the buffer while files do
   **not** roll back (design risk 1 — accepted; consolidator dedupes on next rewrite).
 
@@ -499,7 +499,7 @@ Namespace `observational-memory` under `~/.pi/agent/settings.json` and project
     `coversUpToId` = tip's last source entry (`src/hooks/consolidator-trigger.ts`).
 13. ✅ Memory-map section in the injection block (live from disk at compaction) +
     post-consolidation INDEX.md re-render. `/om:consolidate` + extended `/om:status`.
-14. Acceptance (manual): bounded buffer, clean topic files, cross-session read, `/tree` semantics.
+14. Acceptance (manual): bounded buffer, clean topic files, session-resume read, `/tree` semantics.
 
 Resolved Phase-B decisions: the consolidator accounts for each handed observation as saved to a
 named topic file or intentionally discarded with a reason. The orchestrator validates report
