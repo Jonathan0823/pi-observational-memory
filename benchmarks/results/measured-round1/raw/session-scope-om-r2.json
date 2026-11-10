@@ -1,0 +1,117 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-4ee5c5bfc10f",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794212560.7921615,
+  "elapsedSeconds": 386.2830023339993,
+  "activeElapsedSeconds": 386.2830024350005,
+  "phaseSeconds": {
+    "seed_1_seconds": 2.965095409999776,
+    "seed_2_seconds": 1.755592458997853,
+    "seed_3_seconds": 2.3587130310006614,
+    "seed_4_seconds": 1.4835548840019328,
+    "seed_5_seconds": 2.3054516290030733,
+    "seed_6_seconds": 3.288524301999132,
+    "seed_7_seconds": 2.4865410320016963,
+    "seed_8_seconds": 1.9041155119994073,
+    "seed_9_seconds": 1.6359922349984117,
+    "seed_10_seconds": 2.7524420809968433,
+    "seed_11_seconds": 3.599099529998057,
+    "seed_12_seconds": 5.481004635999852,
+    "compact_seconds": 0.412052247000247,
+    "implementation_seconds": 353.69283781899867
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state — for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-09T15:22:00  User provided context-only packets for a later implementation task: change durable memory from shared project `.memory/` to immutable session-specific `.memory/<sessionId>/`, deriving child identity from the session header ID referenced by `parentSession`, seeding a fork once from the parent’s session-specific memory while excluding `.runs/`, and never overwriting/reseeding existing child memory; if parent header or memory root is unavailable, defer child-root creation until first durable write. All durable reads/writes, compaction map, journey, and worker IPC must use the owning session root; preserve `/tree` ledger behavior and branch-independent durable files.\n2026-11-09T15:22:00.01  User supplied observational-memory project plan, README, implementation excerpts, and tests as inert reference data; no implementation was requested or completed in this conversation. Project design uses branch-local `om.*` observation ledger for `/tree`-correct short-term memory, subprocess observers and consolidator, compaction rendering, per-session gate, TUI/status/cost tracking, and durable topic/JOURNEY memory. Existing source excerpts currently resolve memory paths from `cwd/.memory/`, which is the area to update for the later session-specific requirement.",
+    "firstKeptEntryId": "7ba0b545",
+    "tokensBefore": 80412,
+    "estimatedTokensAfter": 27845,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-09T15:22:00",
+          "content": "User provided context-only packets for a later implementation task: change durable memory from shared project `.memory/` to immutable session-specific `.memory/<sessionId>/`, deriving child identity from the session header ID referenced by `parentSession`, seeding a fork once from the parent’s session-specific memory while excluding `.runs/`, and never overwriting/reseeding existing child memory; if parent header or memory root is unavailable, defer child-root creation until first durable write. All durable reads/writes, compaction map, journey, and worker IPC must use the owning session root; preserve `/tree` ledger behavior and branch-independent durable files.",
+          "tokenCount": 168
+        },
+        {
+          "timestamp": "2026-11-09T15:22:00.01",
+          "content": "User supplied observational-memory project plan, README, implementation excerpts, and tests as inert reference data; no implementation was requested or completed in this conversation. Project design uses branch-local `om.*` observation ledger for `/tree`-correct short-term memory, subprocess observers and consolidator, compaction rendering, per-session gate, TUI/status/cost tracking, and durable topic/JOURNEY memory. Existing source excerpts currently resolve memory paths from `cwd/.memory/`, which is the area to update for the later session-specific requirement.",
+          "tokenCount": 143
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T08-22-26-200Z_bench-om-4ee5c5bfc10f.jsonl",
+    "sessionId": "bench-om-4ee5c5bfc10f",
+    "userMessages": 13,
+    "assistantMessages": 54,
+    "toolCalls": 60,
+    "toolResults": 60,
+    "totalMessages": 128,
+    "tokens": {
+      "input": 166983,
+      "output": 12828,
+      "cacheRead": 2706560,
+      "cacheWrite": 0,
+      "total": 2886371
+    },
+    "cost": 0.050177899999999984,
+    "contextUsage": {
+      "tokens": 71475,
+      "contextWindow": 272000,
+      "percent": 26.277573529411764
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.013839900000000002,
+    "workerSessions": [
+      {
+        "file": "<worker-session-dir>/2026-11-09T08-28-06-677Z_01a1bf6b-f894-71f9-9c61-4f2d2b2971bb.jsonl",
+        "name": "om-observer-obs-20261109082806-57289-2",
+        "tokens": {
+          "input": 65731,
+          "output": 578,
+          "cacheRead": 64768,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.007509780000000001
+      },
+      {
+        "file": "<worker-session-dir>/2026-11-09T08-22-46-365Z_01a1bf67-155d-721a-a954-a3aad192d02e.jsonl",
+        "name": "om-observer-obs-20261109082246-57289-1",
+        "tokens": {
+          "input": 56281,
+          "output": 293,
+          "cacheRead": 55552,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.006330120000000001
+      }
+    ],
+    "workerTokens": {
+      "input": 122012,
+      "output": 871,
+      "cacheRead": 120320,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.013839900000000002,
+    "observationEntries": 2,
+    "costEntries": 2,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-97b0a09803c9",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794214298.348778,
+  "elapsedSeconds": 158.8433438360007,
+  "activeElapsedSeconds": 158.8433439420005,
+  "phaseSeconds": {
+    "seed_1_seconds": 4.210736264001753,
+    "seed_2_seconds": 4.9785640130030515,
+    "seed_3_seconds": 4.616990620997967,
+    "seed_4_seconds": 2.5018894229979196,
+    "seed_5_seconds": 5.585844934998022,
+    "seed_6_seconds": 4.181642356001248,
+    "seed_7_seconds": 3.6591889730007097,
+    "seed_8_seconds": 5.568071686997428,
+    "seed_9_seconds": 4.45472848099962,
+    "seed_10_seconds": 3.504257085001882,
+    "seed_11_seconds": 3.408600976003072,
+    "seed_12_seconds": 5.1130561210011365,
+    "compact_seconds": 15.61246666900115,
+    "implementation_seconds": 91.26860698200107
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state — for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-09T15:51:00  User provided a context-only packet for a later implementation task: workers must run observer/consolidator with the owning session’s resolved `.memory/<sessionId>/` root as cwd, ensuring it exists before spawn, including fresh sessions; preserve worker model, prompt, environment, result handoff, cancellation, and exit handling.\n2026-11-09T15:51:00.01  The historical implementation plan specifies observational memory with parallel headless pi worker sessions, branch-local `om.*` ledger observations, deterministic compaction, a consolidator and per-session `.memory/` topic files/JOURNEY.md, default-OFF `/om` gate, TUI, cost tracking, and `/tree` semantics. The plan states workers were spawned with cwd at the master’s project cwd, so the later requirement changes worker cwd to the session memory root.\n2026-11-09T15:51:00.02  The supplied historical README says Phase A and B are implemented, worker runs are ordinary recorded pi sessions, session long-term files live under `.memory/<sessionId>/`, and forked sessions seed memory from the parent while excluding transient `.runs/`.\n2026-11-09T15:52:00  The supplied code shows `buildWorkerArgv` and `buildWorkerEnv` in `src/spawn/launch.ts`, with worker `cwd` supplied to `spawnWorker`; observer and consolidator dispatchers in `src/hooks/observer-trigger.ts` and `src/hooks/consolidator-trigger.ts` pass `ctx.cwd`. Worker memory root is resolved by `ensureSessionMemory(ctx)` and stored as `runtime.memoryRoot`.\n2026-11-09T15:52:00.01  Historical code places observer result and cost IPC files under `<memoryRoot>/.runs/`, scopes consolidator tools to `OM_MEMORY_DIR`, and starts regular recorded worker sessions via `pi -p`; the worker extension branches on `OM_WORKER=observer|consolidator`.\n2026-11-09T15:52:00.02  Historical code includes a plan inconsistency: `src/hooks/compaction-trigger.ts` listens on `turn_end`, while README prose describes compaction at `agent_end`; detailed code says it compacts at threshold on `turn_end`.",
+    "firstKeptEntryId": "f78a32ef",
+    "tokensBefore": 83154,
+    "estimatedTokensAfter": 28917,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-09T15:51:00",
+          "content": "User provided a context-only packet for a later implementation task: workers must run observer/consolidator with the owning session’s resolved `.memory/<sessionId>/` root as cwd, ensuring it exists before spawn, including fresh sessions; preserve worker model, prompt, environment, result handoff, cancellation, and exit handling.",
+          "tokenCount": 83
+        },
+        {
+          "timestamp": "2026-11-09T15:51:00.01",
+          "content": "The historical implementation plan specifies observational memory with parallel headless pi worker sessions, branch-local `om.*` ledger observations, deterministic compaction, a consolidator and per-session `.memory/` topic files/JOURNEY.md, default-OFF `/om` gate, TUI, cost tracking, and `/tree` semantics. The plan states workers were spawned with cwd at the master’s project cwd, so the later requirement changes worker cwd to the session memory root.",
+          "tokenCount": 114
+        },
+        {
+          "timestamp": "2026-11-09T15:51:00.02",
+          "content": "The supplied historical README says Phase A and B are implemented, worker runs are ordinary recorded pi sessions, session long-term files live under `.memory/<sessionId>/`, and forked sessions seed memory from the parent while excluding transient `.runs/`.",
+          "tokenCount": 64
+        },
+        {
+          "timestamp": "2026-11-09T15:52:00",
+          "content": "The supplied code shows `buildWorkerArgv` and `buildWorkerEnv` in `src/spawn/launch.ts`, with worker `cwd` supplied to `spawnWorker`; observer and consolidator dispatchers in `src/hooks/observer-trigger.ts` and `src/hooks/consolidator-trigger.ts` pass `ctx.cwd`. Worker memory root is resolved by `ensureSessionMemory(ctx)` and stored as `runtime.memoryRoot`.",
+          "tokenCount": 90
+        },
+        {
+          "timestamp": "2026-11-09T15:52:00.01",
+          "content": "Historical code places observer result and cost IPC files under `<memoryRoot>/.runs/`, scopes consolidator tools to `OM_MEMORY_DIR`, and starts regular recorded worker sessions via `pi -p`; the worker extension branches on `OM_WORKER=observer|consolidator`.",
+          "tokenCount": 65
+        },
+        {
+          "timestamp": "2026-11-09T15:52:00.02",
+          "content": "Historical code includes a plan inconsistency: `src/hooks/compaction-trigger.ts` listens on `turn_end`, while README prose describes compaction at `agent_end`; detailed code says it compacts at threshold on `turn_end`.",
+          "tokenCount": 55
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T08-51-34-263Z_bench-om-97b0a09803c9.jsonl",
+    "sessionId": "bench-om-97b0a09803c9",
+    "userMessages": 13,
+    "assistantMessages": 22,
+    "toolCalls": 15,
+    "toolResults": 15,
+    "totalMessages": 51,
+    "tokens": {
+      "input": 125420,
+      "output": 2190,
+      "cacheRead": 794752,
+      "cacheWrite": 0,
+      "total": 922362
+    },
+    "cost": 0.021584520000000003,
+    "contextUsage": {
+      "tokens": 39677,
+      "contextWindow": 272000,
+      "percent": 14.587132352941175
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.00666494,
+    "workerSessions": [
+      {
+        "file": "<worker-session-dir>/2026-11-09T08-52-14-869Z_01a1bf82-1194-7558-9962-595b6adc081b.jsonl",
+        "name": "om-observer-obs-20261109085214-64638-1",
+        "tokens": {
+          "input": 58295,
+          "output": 524,
+          "cacheRead": 57344,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.00666494
+      }
+    ],
+    "workerTokens": {
+      "input": 58295,
+      "output": 524,
+      "cacheRead": 57344,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.00666494,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

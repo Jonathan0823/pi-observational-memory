@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-f424d44cb12b",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794212236.3025658,
+  "elapsedSeconds": 309.56960196100044,
+  "activeElapsedSeconds": 309.5696020739997,
+  "phaseSeconds": {
+    "seed_1_seconds": 8.46985230700011,
+    "seed_2_seconds": 3.9025775489972148,
+    "seed_3_seconds": 4.870064801998524,
+    "seed_4_seconds": 4.176145907000318,
+    "seed_5_seconds": 3.1287670669989893,
+    "seed_6_seconds": 2.568814846999885,
+    "seed_7_seconds": 2.2390164190001087,
+    "seed_8_seconds": 3.0172682480006188,
+    "seed_9_seconds": 4.018765372002235,
+    "seed_10_seconds": 3.9005535079995752,
+    "seed_11_seconds": 5.5070123090008565,
+    "seed_12_seconds": 3.463619819001906,
+    "compact_seconds": 18.639119245002803,
+    "implementation_seconds": 241.64113519400053
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\nChange observational memory so durable long-term memory is owned by immutable session IDs at `.memory/<sessionId>/`, while preserving short-term ledger `/tree` behavior. Forked sessions should seed from their parent’s session-specific memory once, on first touch.\n\n## Constraints & Preferences\n- Parent identity must come from the session header’s `parentSession` path and that file’s header ID—not display names or filename IDs.\n- Skip transient `.runs/` data when seeding. If the parent header is unreadable or has no memory root, leave the child root uncreated until its first durable write.\n- Never overwrite or reseed existing child memory on resume.\n- Route all durable-memory reads/writes, compaction memory-map rendering, journey access, and worker IPC through the owning session’s memory root.\n- Keep durable files independent from ledger branches; preserve existing short-term ledger `/tree` behavior.\n- Preparation packets are reference only; no implementation, file edits, tools, or tests have been performed.\n\n## Progress\n### Done\n- [x] Received context packets describing the project plan, architecture, code excerpts, and tests.\n\n### In Progress\n- [ ] No implementation work has started; awaiting a separate explicit implementation prompt.\n\n### Blocked\n- No blocker beyond awaiting the implementation prompt.\n\n## Key Decisions\n- **Session ID is durable-memory identity**: Each session’s long-term files belong under `.memory/<sessionId>/`.\n- **Seed child memory once**: Discover parent using the session header’s `parentSession` path, then read the parent header ID; do not reseed an existing child root.\n- **Exclude transient run data**: `.runs/` is IPC data and must not be copied during seeding.\n- **Preserve ledger semantics**: Short-term observations remain branch-local and `/tree`-aware; durable memory does not roll back with ledger branches.\n\n## Next Steps\n1. Wait for the explicit implementation prompt after compaction.\n2. Then inspect/update memory path resolution, parent seeding, and all durable-memory and worker IPC call sites to use the owning session’s memory root.\n3. Add or update tests for session identity, one-time fork seeding, `.runs/` exclusion, missing/unreadable parent headers, and resume behavior.\n\n## Critical Context\n- Current memory substrate is in `src/memory/paths.ts`: `memoryDir(cwd)`, `indexPath(cwd)`, `journeyPath(cwd)`, `readJourney(cwd)`, `listTopics(cwd)`, and `atomicWrite(...)` currently resolve project-level `.memory/`.\n- Worker IPC currently uses `src/spawn/runs.ts` helpers (`runsDir`, `runResultPath`, `runCostPath`) rooted at `<project>/.memory/.runs/`; `src/spawn/launch.ts` passes `OM_MEMORY_DIR` from `memoryDir(cwd)`.\n- Durable-memory consumers include `src/hooks/compaction-hook.ts`, `src/hooks/consolidator-trigger.ts`, `src/commands/status.ts`, `agent/consolidator/tools.ts`, and `src/memory/index-render.ts`.\n- The session’s immutable ID and parent path are expected to be obtained from session headers; do not substitute mutable display names or filename IDs.",
+    "firstKeptEntryId": "db85c9c3",
+    "tokensBefore": 80430,
+    "estimatedTokensAfter": 28137,
+    "usage": {
+      "input": 117,
+      "output": 752,
+      "cacheRead": 53888,
+      "cacheWrite": 0,
+      "reasoning": 78,
+      "totalTokens": 54757,
+      "cost": {
+        "input": 1.1700000000000001e-05,
+        "output": 0.000376,
+        "cacheRead": 0.00053888,
+        "cacheWrite": 0,
+        "total": 0.00092658,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T08-17-02-734Z_bench-native-f424d44cb12b.jsonl",
+    "sessionId": "bench-native-f424d44cb12b",
+    "userMessages": 13,
+    "assistantMessages": 35,
+    "toolCalls": 30,
+    "toolResults": 30,
+    "totalMessages": 79,
+    "tokens": {
+      "input": 134308,
+      "output": 7082,
+      "cacheRead": 1466368,
+      "cacheWrite": 0,
+      "total": 1607758
+    },
+    "cost": 0.03163548,
+    "contextUsage": {
+      "tokens": 49122,
+      "contextWindow": 272000,
+      "percent": 18.05955882352941
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

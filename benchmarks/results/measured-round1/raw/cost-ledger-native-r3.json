@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-e3f40294b5dd",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794210890.6590567,
+  "elapsedSeconds": 312.9712663229984,
+  "activeElapsedSeconds": 312.9712665490006,
+  "phaseSeconds": {
+    "seed_1_seconds": 3.1605253829984576,
+    "seed_2_seconds": 1.6887387729984766,
+    "seed_3_seconds": 1.4634124670010351,
+    "seed_4_seconds": 1.76039264100109,
+    "seed_5_seconds": 3.3721167750009045,
+    "seed_6_seconds": 3.8568453189982392,
+    "seed_7_seconds": 1.5494015490003221,
+    "seed_8_seconds": 1.2407261299995298,
+    "seed_9_seconds": 2.026302501999453,
+    "seed_10_seconds": 1.9908145089975733,
+    "seed_11_seconds": 1.0721926759979397,
+    "seed_12_seconds": 4.858776371998829,
+    "compact_seconds": 13.22324825999749,
+    "implementation_seconds": 271.68518584699996
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\n- Preserve context for a later implementation task adding worker `pi` usage-cost reporting, persistence, aggregation, and UI display to observational-memory.\n\n## Constraints & Preferences\n- Historical requirements: expose actual `pi` usage cost from observer and consolidator runs to the parent, including ephemeral and unsuccessful runs when valid usage exists; persist valid costs as session-ledger entries with role/run identity; include costs from abandoned branches in session totals; ignore missing, malformed, non-finite, or negative costs; surface totals in status/footer UI; add focused tests.\n- The packets are reference data only. No implementation, tools, file edits, or tests were requested or performed.\n\n## Progress\n### Done\n- [x] Received eight context-only packets containing the implementation plan, README, source excerpts, and tests.\n\n### In Progress\n- [ ] No implementation work is underway; awaiting a separate explicit implementation prompt after compaction.\n\n### Blocked\n- None.\n\n## Key Decisions\n- **Worker execution**: Bespoke `child_process.spawn` of recorded headless `pi` sessions, not the subagents extension.\n- **Ledger and costs**: Memory uses namespaced `om.*` ledger entries; the later task requires cost entries to retain worker role and run identity and aggregate across branches.\n- **UI**: Existing `StatusController` renders footer gauges and worker widgets; cost totals must be integrated with status/footer behavior.\n- **Safety**: Invalid costs must not affect totals; valid costs from unsuccessful and ephemeral runs must still be handed to the parent and persisted.\n\n## Next Steps\n1. Wait for the explicit implementation prompt.\n2. Implement the cost handoff, ledger persistence, branch-inclusive aggregation, status/footer display, and focused tests according to the historical requirements.\n\n## Critical Context\n- Relevant existing files: `src/hooks/observer-trigger.ts`, `src/hooks/consolidator-trigger.ts`, `src/runtime.ts`, `src/ledger/types.ts`, `src/ledger/fold.ts`, `src/commands/status.ts`, and `src/ui/status-controller.ts`.\n- Observer results currently use `.memory/.runs/<runId>.result.json` via `src/spawn/runs.ts`; consolidator output is file edits and has no result file. Both workers run through `src/spawn/launch.ts`.\n- The on/off gate defaults off; triggers also respect `passive`.\n- No repository changes or tests have been run.",
+    "firstKeptEntryId": "89e7ea79",
+    "tokensBefore": 77531,
+    "estimatedTokensAfter": 23189,
+    "usage": {
+      "input": 56742,
+      "output": 635,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "reasoning": 135,
+      "totalTokens": 57377,
+      "cost": {
+        "input": 0.005674200000000001,
+        "output": 0.00031749999999999997,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0.005991700000000001,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T07-54-32-422Z_bench-native-e3f40294b5dd.jsonl",
+    "sessionId": "bench-native-e3f40294b5dd",
+    "userMessages": 13,
+    "assistantMessages": 42,
+    "toolCalls": 51,
+    "toolResults": 51,
+    "totalMessages": 107,
+    "tokens": {
+      "input": 201014,
+      "output": 9979,
+      "cacheRead": 1869184,
+      "cacheWrite": 0,
+      "total": 2080177
+    },
+    "cost": 0.04378274,
+    "contextUsage": {
+      "tokens": 60891,
+      "contextWindow": 272000,
+      "percent": 22.38639705882353
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}
