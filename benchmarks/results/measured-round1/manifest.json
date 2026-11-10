@@ -1,0 +1,62 @@
+{
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "workerThinking": {
+    "observer": "low",
+    "consolidator": "medium"
+  },
+  "validMeasuredTrials": 18,
+  "tasks": {
+    "cost-ledger": {
+      "startCommit": "009f292ae4885e01c5cc5bced0b02ab8343412f6",
+      "seedSha256": "05c3d9f823d223418eda4e7bee8b38549f46b6a98d8e2e49085eacb2efaf1efc"
+    },
+    "session-scope": {
+      "startCommit": "7eabcf572ea2c5b6cd37dcfbebe7540a866e1456",
+      "seedSha256": "736232056cc36f9a1a2cc7700bdaa1d0d9b4c138725bccbf924a6f4fa1f6ef83"
+    },
+    "worker-cwd": {
+      "startCommit": "844292dd084bfe7cd36ed1aa44666b08a8b1a482",
+      "seedSha256": "cb2da33098e35cc3cb9e251427f8d6018ed4086e26293438e6ff40b95b116417"
+    }
+  },
+  "settings": {
+    "chunkTokens": 60000,
+    "requestPacingSeconds": 0,
+    "compaction": "explicit RPC after 12 seed turns; worker-cwd r3 OM retry used benchmark-only compactAtContextTokens=100000 to avoid an auto-compaction race"
+  },
+  "trialDirectories": {
+    "cost-ledger-native-r1": "cost-ledger-r1-native",
+    "cost-ledger-om-r1": "cost-ledger-r1-om",
+    "cost-ledger-native-r2": "cost-ledger-r2-native",
+    "cost-ledger-om-r2": "cost-ledger-r2-om",
+    "cost-ledger-native-r3": "cost-ledger-r3-native",
+    "cost-ledger-om-r3": "cost-ledger-r3-om-retry3",
+    "session-scope-native-r1": "session-scope-r1-native",
+    "session-scope-om-r1": "session-scope-r1-om",
+    "session-scope-native-r2": "session-scope-r2-native",
+    "session-scope-om-r2": "session-scope-r2-om",
+    "session-scope-native-r3": "session-scope-r3-native",
+    "session-scope-om-r3": "session-scope-r3-om",
+    "worker-cwd-native-r1": "worker-cwd-r1-native",
+    "worker-cwd-om-r1": "worker-cwd-r1-om",
+    "worker-cwd-native-r2": "worker-cwd-r2-native",
+    "worker-cwd-om-r2": "worker-cwd-r2-om",
+    "worker-cwd-native-r3": "worker-cwd-r3-native",
+    "worker-cwd-om-r3": "worker-cwd-r3-om-retry"
+  },
+  "invalidAttempts": [
+    {
+      "trial": "cost-ledger native/OM r3 pair",
+      "reason": "outer tool timeout killed the final OM run before result; native remained valid, OM re-run separately"
+    },
+    {
+      "trial": "cost-ledger OM r3 retry attempt 1 and 2",
+      "reason": "Codex service overload during seed-1; replaced by successful retry3"
+    },
+    {
+      "trial": "worker-cwd OM r3 initial",
+      "reason": "OM auto-compacted at 83,168 tokens before explicit RPC compact; runner reported Already compacted; replaced using 100k benchmark-only auto threshold"
+    }
+  ]
+}

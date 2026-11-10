@@ -1,0 +1,146 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-4a379f095d1a",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794211832.4767854,
+  "elapsedSeconds": 376.10088413500125,
+  "activeElapsedSeconds": 376.1008842270021,
+  "phaseSeconds": {
+    "seed_1_seconds": 6.487579414999345,
+    "seed_2_seconds": 3.754238436002197,
+    "seed_3_seconds": 4.15222047700081,
+    "seed_4_seconds": 4.957586558997718,
+    "seed_5_seconds": 5.529685041001358,
+    "seed_6_seconds": 3.6531446109984245,
+    "seed_7_seconds": 7.941264314002183,
+    "seed_8_seconds": 3.951047581998864,
+    "seed_9_seconds": 3.8957259109993174,
+    "seed_10_seconds": 4.294162563001009,
+    "seed_11_seconds": 4.177438368002186,
+    "seed_12_seconds": 5.589943202998256,
+    "compact_seconds": 10.276263536001352,
+    "implementation_seconds": 307.28212562599947
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state — for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-09T15:10:00  User supplied context-only packets in preparation turns 1–8/12 for a later implementation task: change project `.memory/` to immutable per-session roots `.memory/<sessionId>/`, seed child/fork memory once on first touch from the parent identified by its session header `parentSession` path and header ID, skip `.runs/`, avoid overwriting/re-seeding existing child memory, and leave it uncreated when the parent header/root is unreadable; route all durable-memory, compaction-map, journey, and worker IPC access through the owning session root while preserving `/tree` ledger behavior.\n2026-11-09T15:10:00.01  User provided a detailed observational-memory implementation plan and repository excerpts as inert reference data, not an implementation request. Architecture uses a branch-local `om.*` ledger for short-term observations, parallel ordinary recorded headless Pi observer sessions, deterministic compaction projection, and a background consolidator for durable topic/JOURNEY files; the per-session memory-root requirement supersedes the excerpts' project-level `.memory/` assumptions.\n2026-11-09T15:10:00.02  Plan decisions include phased short-term then long-term implementation; bespoke `child_process.spawn` of Pi workers with a shared role-selected extension; vendored minimal ledger utilities; orchestrator-assigned unique timestamp IDs; strong default Claude Sonnet models; and a default-OFF per-session `/om` gate persisted as `om.enabled`.\n2026-11-09T15:10:00.03  Plan specifies branch-local observation records and drops with `coversUpToId` watermarks, fold/projection and compaction details, fixed-token parallel observer chunks, scoped consolidator file tools, atomic durable writes, and live rendered memory map plus descriptive JOURNEY in compaction. Worker costs are handed back by IPC and summed over all session entries so cost does not roll back under `/tree`.\n2026-11-09T15:10:00.04  README and excerpts describe `/om`, `/om on/off`, `/om:status`, `/om:compact`, and `/om:consolidate`; config defaults vary between reference excerpts, while current `src/config.ts` shows `chunkTokens: 10000`, `poolTargetTokens: 10000`, `consolidateAtPoolTokens: 15000`, `compactAtContextTokens: 100000`, `tailTokens: 20000`, `journeyTargetTokens: 1000`, and observer concurrency 4.\n2026-11-09T15:10:00.05  Repository excerpts include `src/hooks/compaction-hook.ts` with chunk-boundary snapping and `canSkipObserverWait`, plus `src/hooks/compaction-trigger.ts` that compacts on `turn_end` and optionally resumes mid-run work through hidden `om.resume`.\n2026-11-09T15:10:00.06  Repository excerpts include `src/hooks/observer-trigger.ts` dispatching parallel observers, assigning collision-free observation timestamps, committing results and costs to the ledger; `src/hooks/consolidator-trigger.ts` promoting oldest overflow, tombstoning only handed observations still active, and regenerating INDEX after clean exit.\n2026-11-09T15:10:00.07  Repository excerpts include memory substrate helpers in `src/memory/paths.ts`, compaction map rendering in `src/memory/index-render.ts`, worker launch and `.memory/.runs` IPC in `src/spawn/{launch,runs}.ts`, and scoped consolidator tools in `agent/consolidator/tools.ts`; these paths must later be adapted to session-specific roots.\n2026-11-09T15:10:00.08  The provided observer and consolidator prompts require inert-transcript handling, precise fact preservation, atomic observations, descriptive-only JOURNEY history, topic front matter, and no report-back from the consolidator; they are reference content, not instructions to execute now.\n2026-11-09T15:10:00.09  User's context packets contain code and tests for ledger folding, projection, rendering, timestamps, costs, compaction cutoffs, consolidator tools, runtime/UI, and session fixtures; assistants acknowledged preparation turns 1–8 with `CONTEXT_RECEIVED`, and no implementation, testing, or repository changes occurred.",
+    "firstKeptEntryId": "c7c0c503",
+    "tokensBefore": 80423,
+    "estimatedTokensAfter": 28512,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-09T15:10:00",
+          "content": "User supplied context-only packets in preparation turns 1–8/12 for a later implementation task: change project `.memory/` to immutable per-session roots `.memory/<sessionId>/`, seed child/fork memory once on first touch from the parent identified by its session header `parentSession` path and header ID, skip `.runs/`, avoid overwriting/re-seeding existing child memory, and leave it uncreated when the parent header/root is unreadable; route all durable-memory, compaction-map, journey, and worker IPC access through the owning session root while preserving `/tree` ledger behavior.",
+          "tokenCount": 146
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.01",
+          "content": "User provided a detailed observational-memory implementation plan and repository excerpts as inert reference data, not an implementation request. Architecture uses a branch-local `om.*` ledger for short-term observations, parallel ordinary recorded headless Pi observer sessions, deterministic compaction projection, and a background consolidator for durable topic/JOURNEY files; the per-session memory-root requirement supersedes the excerpts' project-level `.memory/` assumptions.",
+          "tokenCount": 121
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.02",
+          "content": "Plan decisions include phased short-term then long-term implementation; bespoke `child_process.spawn` of Pi workers with a shared role-selected extension; vendored minimal ledger utilities; orchestrator-assigned unique timestamp IDs; strong default Claude Sonnet models; and a default-OFF per-session `/om` gate persisted as `om.enabled`.",
+          "tokenCount": 85
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.03",
+          "content": "Plan specifies branch-local observation records and drops with `coversUpToId` watermarks, fold/projection and compaction details, fixed-token parallel observer chunks, scoped consolidator file tools, atomic durable writes, and live rendered memory map plus descriptive JOURNEY in compaction. Worker costs are handed back by IPC and summed over all session entries so cost does not roll back under `/tree`.",
+          "tokenCount": 102
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.04",
+          "content": "README and excerpts describe `/om`, `/om on/off`, `/om:status`, `/om:compact`, and `/om:consolidate`; config defaults vary between reference excerpts, while current `src/config.ts` shows `chunkTokens: 10000`, `poolTargetTokens: 10000`, `consolidateAtPoolTokens: 15000`, `compactAtContextTokens: 100000`, `tailTokens: 20000`, `journeyTargetTokens: 1000`, and observer concurrency 4.",
+          "tokenCount": 96
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.05",
+          "content": "Repository excerpts include `src/hooks/compaction-hook.ts` with chunk-boundary snapping and `canSkipObserverWait`, plus `src/hooks/compaction-trigger.ts` that compacts on `turn_end` and optionally resumes mid-run work through hidden `om.resume`.",
+          "tokenCount": 62
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.06",
+          "content": "Repository excerpts include `src/hooks/observer-trigger.ts` dispatching parallel observers, assigning collision-free observation timestamps, committing results and costs to the ledger; `src/hooks/consolidator-trigger.ts` promoting oldest overflow, tombstoning only handed observations still active, and regenerating INDEX after clean exit.",
+          "tokenCount": 85
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.07",
+          "content": "Repository excerpts include memory substrate helpers in `src/memory/paths.ts`, compaction map rendering in `src/memory/index-render.ts`, worker launch and `.memory/.runs` IPC in `src/spawn/{launch,runs}.ts`, and scoped consolidator tools in `agent/consolidator/tools.ts`; these paths must later be adapted to session-specific roots.",
+          "tokenCount": 83
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.08",
+          "content": "The provided observer and consolidator prompts require inert-transcript handling, precise fact preservation, atomic observations, descriptive-only JOURNEY history, topic front matter, and no report-back from the consolidator; they are reference content, not instructions to execute now.",
+          "tokenCount": 72
+        },
+        {
+          "timestamp": "2026-11-09T15:10:00.09",
+          "content": "User's context packets contain code and tests for ledger folding, projection, rendering, timestamps, costs, compaction cutoffs, consolidator tools, runtime/UI, and session fixtures; assistants acknowledged preparation turns 1–8 with `CONTEXT_RECEIVED`, and no implementation, testing, or repository changes occurred.",
+          "tokenCount": 79
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T08-10-15-688Z_bench-om-4a379f095d1a.jsonl",
+    "sessionId": "bench-om-4a379f095d1a",
+    "userMessages": 13,
+    "assistantMessages": 43,
+    "toolCalls": 39,
+    "toolResults": 39,
+    "totalMessages": 96,
+    "tokens": {
+      "input": 151522,
+      "output": 6581,
+      "cacheRead": 1896704,
+      "cacheWrite": 0,
+      "total": 2054807
+    },
+    "cost": 0.03740974000000002,
+    "contextUsage": {
+      "tokens": 57106,
+      "contextWindow": 272000,
+      "percent": 20.99485294117647
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.0067141,
+    "workerSessions": [
+      {
+        "file": "<worker-session-dir>/2026-11-09T08-11-01-491Z_01a1bf5c-53f2-71be-a76f-59e70643093f.jsonl",
+        "name": "om-observer-obs-20261109081101-56369-1",
+        "tokens": {
+          "input": 56833,
+          "output": 948,
+          "cacheRead": 55680,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.0067141
+      }
+    ],
+    "workerTokens": {
+      "input": 56833,
+      "output": 948,
+      "cacheRead": 55680,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0067141,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-2e9af993546f",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794213254.1263509,
+  "elapsedSeconds": 312.2220530630002,
+  "activeElapsedSeconds": 312.2220532459978,
+  "phaseSeconds": {
+    "seed_1_seconds": 6.282713127999159,
+    "seed_2_seconds": 5.785149628998624,
+    "seed_3_seconds": 4.4261364710000635,
+    "seed_4_seconds": 4.315694511999027,
+    "seed_5_seconds": 4.941201444999024,
+    "seed_6_seconds": 5.123352166996483,
+    "seed_7_seconds": 3.39990822999971,
+    "seed_8_seconds": 6.320995990001393,
+    "seed_9_seconds": 5.505219001999649,
+    "seed_10_seconds": 2.74049222100075,
+    "seed_11_seconds": 4.953928031998657,
+    "seed_12_seconds": 5.369294325999363,
+    "compact_seconds": 11.55351242100005,
+    "implementation_seconds": 241.3349956819984
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state — for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-09T15:34:00  User provided a context-only implementation packet for a later task: change durable memory from project-level `.memory/` to immutable session-specific `.memory/<sessionId>/`; discover fork parent via session header `parentSession` path and read its header ID, never using display names or filename IDs as identity; seed child memory once on first touch, excluding `.runs/`; leave root uncreated if parent header/root is unreadable or absent; never overwrite or reseed existing child memory on resume; route all durable reads/writes, compaction maps, journey access, and worker IPC through the owning session root, while preserving `/tree` ledger behavior and independent durable files.\n2026-11-09T15:34:00.01  Project is an observational-memory pi extension with an in-process orchestrator, shared subprocess worker extension (`OM_WORKER=observer|consolidator`), branch-local ledger observations, durable topic files and JOURNEY.md, deterministic compaction rendering, and TUI; default per-session gate is off via `om.enabled`.\n2026-11-09T15:34:00.02  Existing memory substrate in `src/memory/paths.ts` resolves project memory as `<cwd>/.memory/`, with INDEX.md, JOURNEY.md, topics, and transient `.runs`; `src/spawn/runs.ts` and `src/spawn/launch.ts` likewise locate worker IPC and OM_MEMORY_DIR under project-level `.memory/`. `src/hooks/compaction-hook.ts`, `src/commands/status.ts`, and `src/hooks/consolidator-trigger.ts` access memory/journey/index through cwd-based helpers.\n2026-11-09T15:34:00.03  Conversation packets repeatedly instructed CONTEXT_RECEIVED only; assistant acknowledged preparation turns 1–8 without implementation.\n2026-11-09T15:34:00.04  Reference design says fork/child memory must be seeded exactly once from parent memory, derive parent identity from parent session header ID via parentSession path, skip transient `.runs/`, preserve existing child data, and avoid creating an empty child root when parent has no readable header or memory root.",
+    "firstKeptEntryId": "39c4460b",
+    "tokensBefore": 80432,
+    "estimatedTokensAfter": 28022,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-09T15:34:00",
+          "content": "User provided a context-only implementation packet for a later task: change durable memory from project-level `.memory/` to immutable session-specific `.memory/<sessionId>/`; discover fork parent via session header `parentSession` path and read its header ID, never using display names or filename IDs as identity; seed child memory once on first touch, excluding `.runs/`; leave root uncreated if parent header/root is unreadable or absent; never overwrite or reseed existing child memory on resume; route all durable reads/writes, compaction maps, journey access, and worker IPC through the owning session root, while preserving `/tree` ledger behavior and independent durable files.",
+          "tokenCount": 172
+        },
+        {
+          "timestamp": "2026-11-09T15:34:00.01",
+          "content": "Project is an observational-memory pi extension with an in-process orchestrator, shared subprocess worker extension (`OM_WORKER=observer|consolidator`), branch-local ledger observations, durable topic files and JOURNEY.md, deterministic compaction rendering, and TUI; default per-session gate is off via `om.enabled`.",
+          "tokenCount": 80
+        },
+        {
+          "timestamp": "2026-11-09T15:34:00.02",
+          "content": "Existing memory substrate in `src/memory/paths.ts` resolves project memory as `<cwd>/.memory/`, with INDEX.md, JOURNEY.md, topics, and transient `.runs`; `src/spawn/runs.ts` and `src/spawn/launch.ts` likewise locate worker IPC and OM_MEMORY_DIR under project-level `.memory/`. `src/hooks/compaction-hook.ts`, `src/commands/status.ts`, and `src/hooks/consolidator-trigger.ts` access memory/journey/index through cwd-based helpers.",
+          "tokenCount": 108
+        },
+        {
+          "timestamp": "2026-11-09T15:34:00.03",
+          "content": "Conversation packets repeatedly instructed CONTEXT_RECEIVED only; assistant acknowledged preparation turns 1–8 without implementation.",
+          "tokenCount": 34
+        },
+        {
+          "timestamp": "2026-11-09T15:34:00.04",
+          "content": "Reference design says fork/child memory must be seeded exactly once from parent memory, derive parent identity from parent session header ID via parentSession path, skip transient `.runs/`, preserve existing child data, and avoid creating an empty child root when parent has no readable header or memory root.",
+          "tokenCount": 78
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T08-34-05-067Z_bench-om-2e9af993546f.jsonl",
+    "sessionId": "bench-om-2e9af993546f",
+    "userMessages": 13,
+    "assistantMessages": 35,
+    "toolCalls": 31,
+    "toolResults": 31,
+    "totalMessages": 80,
+    "tokens": {
+      "input": 176343,
+      "output": 6066,
+      "cacheRead": 1701248,
+      "cacheWrite": 0,
+      "total": 1883657
+    },
+    "cost": 0.037679779999999996,
+    "contextUsage": {
+      "tokens": 66654,
+      "contextWindow": 272000,
+      "percent": 24.50514705882353
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.006443,
+    "workerSessions": [
+      {
+        "file": "<worker-session-dir>/2026-11-09T08-34-52-131Z_01a1bf72-2862-74cb-a869-5ae8ca75339d.jsonl",
+        "name": "om-observer-obs-20261109083451-58151-1",
+        "tokens": {
+          "input": 56377,
+          "output": 497,
+          "cacheRead": 55680,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.006443
+      }
+    ],
+    "workerTokens": {
+      "input": 56377,
+      "output": 497,
+      "cacheRead": 55680,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.006443,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-5d4edeaf03dd",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794210167.117566,
+  "elapsedSeconds": 324.10762268399776,
+  "activeElapsedSeconds": 324.1076227939993,
+  "phaseSeconds": {
+    "seed_1_seconds": 3.4959511179986293,
+    "seed_2_seconds": 2.1115369250001095,
+    "seed_3_seconds": 2.3805956750002224,
+    "seed_4_seconds": 1.8125606720022915,
+    "seed_5_seconds": 2.157765289000963,
+    "seed_6_seconds": 3.415932263000286,
+    "seed_7_seconds": 2.997207159998652,
+    "seed_8_seconds": 5.4203486450023775,
+    "seed_9_seconds": 2.6922152190018096,
+    "seed_10_seconds": 2.8086113370009116,
+    "seed_11_seconds": 3.260316251002223,
+    "seed_12_seconds": 3.617877276999934,
+    "compact_seconds": 16.574738606999745,
+    "implementation_seconds": 271.3365288390014
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\n- Preserve repository context for a later implementation prompt concerning worker-run `pi` usage-cost handoff, persistence, aggregation, and display.\n\n## Constraints & Preferences\n- All 12 preparation turns are context-only; do not implement, use tools, edit files, or run tests until a separate explicit implementation prompt arrives.\n- Historical requirements: expose valid actual `pi` usage cost from observer and consolidator runs to the parent, including ephemeral and unsuccessful runs; persist costs as session-ledger entries with role/run identity; include costs across all branches, including abandoned branches; ignore missing, malformed, non-finite, or negative costs; surface totals in status/footer UI; add focused tests for aggregation, invalid entries, handoff, and display.\n\n## Progress\n### Done\n- [x] Received reference excerpts for the observational-memory plan, README, worker prompts/tools, orchestrator, ledger, hooks, UI, and tests.\n\n### In Progress\n- [ ] Awaiting the separate explicit implementation prompt.\n\n### Blocked\n- No implementation request has been made; preparation instructions prohibit acting on the reference material.\n\n## Key Decisions\n- **Observer and consolidator workers are ordinary recorded `pi` subprocess sessions**: launched via `child_process.spawn` and `pi -e ... -p`, not the subagents extension.\n- **Ledger costs must be branch-independent for totals**: historical requirement explicitly includes abandoned branches.\n- **Cost validation must be defensive**: invalid or absent values cannot corrupt totals.\n\n## Next Steps\n1. Wait for the explicit implementation prompt after compaction.\n2. Then inspect the relevant repository context and implement the requested cost handoff, ledger accounting, UI, and focused tests.\n\n## Critical Context\n- Repository excerpt describes a Phase A/B observational-memory extension. Master entry: `src/index.ts`; worker entry: `agent/index.ts`; observer and consolidator subprocess launch/handoff: `src/hooks/observer-trigger.ts`, `src/hooks/consolidator-trigger.ts`, `src/spawn/launch.ts`, `src/spawn/runs.ts`.\n- Current ledger vocabulary includes `om.observations.recorded`, `om.observations.dropped`, `om.enabled`, and `om.resume`; ledger types/folding live in `src/ledger/types.ts` and `src/ledger/fold.ts`.\n- UI status/footer implementation is in `src/ui/status-controller.ts`; `/om:status` is in `src/commands/status.ts`.\n- Existing code excerpts do not show worker-cost handoff or cost ledger entries; treat the historical cost requirements as the later task’s reference requirements, not as already implemented.",
+    "firstKeptEntryId": "ddbc0f51",
+    "tokensBefore": 77530,
+    "estimatedTokensAfter": 23233,
+    "usage": {
+      "input": 56742,
+      "output": 666,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "reasoning": 128,
+      "totalTokens": 57408,
+      "cost": {
+        "input": 0.005674200000000001,
+        "output": 0.00033299999999999996,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0.006007200000000001,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T07-42-25-577Z_bench-native-5d4edeaf03dd.jsonl",
+    "sessionId": "bench-native-5d4edeaf03dd",
+    "userMessages": 13,
+    "assistantMessages": 39,
+    "toolCalls": 43,
+    "toolResults": 43,
+    "totalMessages": 96,
+    "tokens": {
+      "input": 194854,
+      "output": 10410,
+      "cacheRead": 1614464,
+      "cacheWrite": 0,
+      "total": 1819728
+    },
+    "cost": 0.040835039999999996,
+    "contextUsage": {
+      "tokens": 55243,
+      "contextWindow": 272000,
+      "percent": 20.309926470588234
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

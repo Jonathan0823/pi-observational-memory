@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-617d62be07a7",
+  "cwd": "<isolated-task-worktree>",
+  "startedAtEpoch": 1794213588.759587,
+  "elapsedSeconds": 256.897889934,
+  "activeElapsedSeconds": 256.8978900889997,
+  "phaseSeconds": {
+    "seed_1_seconds": 5.845236408000346,
+    "seed_2_seconds": 6.507822751998901,
+    "seed_3_seconds": 5.600729185000091,
+    "seed_4_seconds": 6.006382100000337,
+    "seed_5_seconds": 6.130694733998098,
+    "seed_6_seconds": 9.968098512999859,
+    "seed_7_seconds": 8.192481070000213,
+    "seed_8_seconds": 7.3133316449966514,
+    "seed_9_seconds": 10.095429896999121,
+    "seed_10_seconds": 6.480514718001359,
+    "seed_11_seconds": 8.211441084000398,
+    "seed_12_seconds": 9.848797490001743,
+    "compact_seconds": 13.394502384999214,
+    "implementation_seconds": 153.2835329499976
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\nPrepare context for a later implementation task: run observer and consolidator workers from their owning session’s `.memory/<sessionId>/` root rather than the shared project root.\n\n## Constraints & Preferences\n- This is context-only; no implementation, tools, edits, or tests have been performed.\n- Use the root already resolved by the runtime; do not derive it from a display name or project cwd.\n- Ensure the directory exists before spawning, including for a fresh session with no durable files.\n- Preserve worker model, prompt, environment, result handoff, cancellation, and exit handling.\n\n## Progress\n### Done\n- [x] Context packets received; no code changes made.\n\n### In Progress\n- [ ] Awaiting a separate explicit implementation prompt.\n\n### Blocked\n- No implementation prompt has been provided yet.\n\n## Key Decisions\n- **Worker cwd is the session memory root**: Isolates worker-session discovery and scopes transient result/cost IPC and consolidator filesystem tools to the owning session.\n\n## Next Steps\n1. Wait for the explicit implementation prompt.\n2. Then inspect and update worker spawning to use the runtime-resolved memory root, creating it before spawn as needed.\n3. Preserve existing worker behavior and verify with appropriate tests.\n\n## Critical Context\n- `src/runtime.ts`: `Runtime.memoryRoot` stores the per-session root.\n- `src/index.ts`: sets `runtime.memoryRoot` via `ensureSessionMemory(ctx)` when enabled.\n- `src/memory/session.ts`: `ensureSessionMemory` resolves the root, but may leave a fresh root uncreated when there is no parent memory.\n- `src/hooks/observer-trigger.ts` and `src/hooks/consolidator-trigger.ts`: call `spawnWorker({ ..., cwd: ctx.cwd, ... })`; these are the worker spawn sites to examine.\n- `src/spawn/launch.ts`: `spawnWorker` receives and uses the supplied `cwd`.",
+    "firstKeptEntryId": "45a18174",
+    "tokensBefore": 83142,
+    "estimatedTokensAfter": 28721,
+    "usage": {
+      "input": 55778,
+      "output": 607,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "reasoning": 209,
+      "totalTokens": 56385,
+      "cost": {
+        "input": 0.005577800000000001,
+        "output": 0.0003035,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0.005881300000000001,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "<run-session-dir>/2026-11-09T08-39-40-637Z_bench-native-617d62be07a7.jsonl",
+    "sessionId": "bench-native-617d62be07a7",
+    "userMessages": 13,
+    "assistantMessages": 23,
+    "toolCalls": 16,
+    "toolResults": 16,
+    "totalMessages": 53,
+    "tokens": {
+      "input": 182594,
+      "output": 3242,
+      "cacheRead": 829056,
+      "cacheWrite": 0,
+      "total": 1014892
+    },
+    "cost": 0.028170960000000002,
+    "contextUsage": {
+      "tokens": 41124,
+      "contextWindow": 272000,
+      "percent": 15.119117647058825
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}
