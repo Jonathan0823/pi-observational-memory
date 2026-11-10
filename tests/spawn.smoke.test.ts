@@ -1,9 +1,9 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { AGENT_EXTENSION_PATH, buildWorkerArgv, buildWorkerEnv, modelArg } from "../src/spawn/launch.js";
+import { AGENT_EXTENSION_PATH, buildWorkerArgv, buildWorkerEnv, modelArg, spawnWorker } from "../src/spawn/launch.js";
 import { readObserverResult, runResultPath, runsDir, writeObserverResult } from "../src/spawn/runs.js";
 import { registerObserverTool } from "../agent/observer/tool.js";
 
@@ -47,6 +47,26 @@ describe("launch argv + env", () => {
 
 	it("resolves run paths under the session memory root's .runs", () => {
 		expect(runsDir("/proj/.memory/sess-1")).toBe("/proj/.memory/sess-1/.runs");
+	});
+});
+
+describe("worker prompt transport", () => {
+	it("delivers a large UTF-8 prompt intact without exceeding OS argv limits", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "om-large-prompt-"));
+		try {
+			const output = join(dir, "prompt.txt");
+			const prompt = "conversation 🧠\n".repeat(20000);
+			const script = `let text = ''; process.stdin.setEncoding('utf8'); process.stdin.on('data', chunk => text += chunk); process.stdin.on('end', () => require('node:fs').writeFileSync(${JSON.stringify(output)}, text));`;
+			const exit = await spawnWorker({
+				argv: [process.execPath, "-e", script, "--", "-p", prompt],
+				cwd: dir,
+				env: process.env,
+			});
+			expect(exit.code).toBe(0);
+			expect(readFileSync(output, "utf8")).toBe(prompt);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
 	});
 });
 
