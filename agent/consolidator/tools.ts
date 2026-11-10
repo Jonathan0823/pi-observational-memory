@@ -1,9 +1,8 @@
 /**
  * The consolidator's tool belt. `--no-builtin-tools` is set on the worker, so this extension
  * registers its own read/write/edit/ls/grep — all path-scoped to `.memory/` (design risk 6).
- * There is no result file: the file edits ARE the output, and the run ends by natural exit
- * of `pi -p` once the model emits its closing confirmation. The orchestrator then tombstones
- * the whole provided batch (it already knows exactly what it handed over).
+ * Topic-file edits and one structured accounting report form the output. The orchestrator
+ * validates the report and destination files before tombstoning any handed observation.
  *
  * Scoping: every path argument is resolved against OM_MEMORY_DIR and rejected if it escapes
  * that directory, so a wayward model cannot read or clobber the user's project.
@@ -14,6 +13,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import type { Static } from "typebox";
 import { atomicWrite } from "../../src/memory/paths.js";
+import { writeConsolidatorResult } from "../../src/spawn/runs.js";
 
 type ToolText = { content: { type: "text"; text: string }[]; details: unknown };
 
@@ -53,12 +53,29 @@ const GrepSchema = Type.Object({
 	pattern: Type.String({ description: "JavaScript regular expression to search for." }),
 	path: Type.Optional(Type.String({ description: "Restrict to this file/subdir inside .memory/." })),
 });
+const ConsolidationReportSchema = Type.Object({
+	decisions: Type.Array(
+		Type.Union([
+			Type.Object({
+				timestamp: Type.String({ description: "Exact timestamp-id of one handed observation." }),
+				outcome: Type.Literal("saved"),
+				topicPath: Type.String({ description: "Relative topic-file path where the observation was saved." }),
+			}),
+			Type.Object({
+				timestamp: Type.String({ description: "Exact timestamp-id of one handed observation." }),
+				outcome: Type.Literal("discarded"),
+				reason: Type.String({ description: "Why this observation was intentionally discarded." }),
+			}),
+		]),
+	),
+});
 
 type ReadInput = Static<typeof ReadSchema>;
 type WriteInput = Static<typeof WriteSchema>;
 type EditInput = Static<typeof EditSchema>;
 type LsInput = Static<typeof LsSchema>;
 type GrepInput = Static<typeof GrepSchema>;
+type ConsolidationReportInput = Static<typeof ConsolidationReportSchema>;
 
 function listFilesRecursive(dir: string): string[] {
 	const out: string[] = [];
@@ -72,7 +89,7 @@ function listFilesRecursive(dir: string): string[] {
 }
 
 /** Register the consolidator's scoped file tools (read/write/edit/ls/grep), all under .memory/. */
-export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string): void {
+export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string, reportPath: string): void {
 	const root = resolve(memoryRoot);
 
 	pi.registerTool({
@@ -132,6 +149,17 @@ export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string):
 			if (!existsSync(abs)) return ok("(.memory/ is empty)");
 			const entries = readdirSync(abs).filter((n) => !n.startsWith("."));
 			return ok(entries.length > 0 ? entries.sort().join("\n") : "(empty)");
+		},
+	});
+
+	pi.registerTool({
+		name: "report_consolidation",
+		label: "Account for consolidated observations",
+		description: "Report every handed observation as saved to a topic file or intentionally discarded with a reason. Call once when all topic edits are complete.",
+		parameters: ConsolidationReportSchema,
+		async execute(_id: string, params: ConsolidationReportInput): Promise<ToolText> {
+			writeConsolidatorResult(reportPath, { decisions: params.decisions });
+			return ok(`Reported ${params.decisions.length} observation decisions.`);
 		},
 	});
 

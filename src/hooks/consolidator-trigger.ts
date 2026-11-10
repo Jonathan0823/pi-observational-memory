@@ -7,14 +7,13 @@
  * Runs in the BACKGROUND, mirroring the observer trigger (turn_end / agent_start), strictly
  * one at a time (design risk 4). Compaction does not wait for it (R5).
  *
- * Tombstone safety (design risk 4): the orchestrator tombstones the batch it handed the
- * consolidator, intersected with what is STILL active at exit — never an observation an
- * observer committed during the run (those are not in the handed batch). The consolidator does
- * not report back: it must consolidate everything it was given (filing or discarding junk is a
- * valid outcome), so on clean exit we trust it and drop the whole batch. This guarantees the
- * buffer always drains; a flaked-out partial run is recoverable from the worker's global session
- * recording (the standing safety net for lossy rewrites) and is the critic tier's job to catch.
+ * Tombstone safety: the consolidator must report one saved-topic or reasoned-discard decision
+ * per handed observation. The orchestrator validates completeness, uniqueness, references, and
+ * saved-file existence before dropping anything. At exit it intersects the validated report with
+ * observations STILL active, so it never drops an observation committed during the run.
  */
+import { existsSync, realpathSync, statSync } from "node:fs";
+import { relative, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
 	OM_OBSERVATIONS_DROPPED,
@@ -29,9 +28,10 @@ import {
 } from "../ledger/index.js";
 import { nowTimestamp } from "../ledger/serialize.js";
 import { renderIndexFile } from "../memory/index-render.js";
-import { atomicWrite, indexPath, listTopics, readJourney } from "../memory/paths.js";
+import { atomicWrite, indexPath, listTopics, readJourney, resolveWithinMemory } from "../memory/paths.js";
 import type { Runtime } from "../runtime.js";
 import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
+import { readConsolidatorResult, runResultPath } from "../spawn/runs.js";
 import { recordWorkerCost } from "./observer-trigger.js";
 
 type TriggerCtx = {
@@ -78,7 +78,55 @@ function buildConsolidatorPrompt(memoryRoot: string, promote: Observation[], jou
 	);
 }
 
-export function evaluateConsolidatorTrigger(pi: ExtensionAPI, runtime: Runtime, ctx: TriggerCtx): void {
+function validateConsolidatorReport(
+	decisions: ReturnType<typeof readConsolidatorResult>["decisions"],
+	promote: Observation[],
+	memoryRoot: string,
+): void {
+	const expected = new Set(promote.map((observation) => observation.timestamp));
+	if (expected.size !== promote.length) throw new Error("consolidator batch contains duplicate observation timestamps");
+	const seen = new Set<string>();
+	const realRoot = realpathSync(memoryRoot);
+
+	for (const decision of decisions) {
+		if (!expected.has(decision.timestamp)) throw new Error(`consolidator report references unknown observation ${decision.timestamp}`);
+		if (seen.has(decision.timestamp)) throw new Error(`consolidator report duplicates observation ${decision.timestamp}`);
+		seen.add(decision.timestamp);
+		if (decision.outcome !== "saved") continue;
+
+		const topicPath = decision.topicPath;
+		const destination = resolveWithinMemory(memoryRoot, topicPath);
+		const relativePath = destination ? relative(memoryRoot, destination) : "";
+		if (
+			!destination ||
+			relativePath === "" ||
+			relativePath.includes(sep) ||
+			!relativePath.endsWith(".md") ||
+			["index.md", "journey.md"].includes(relativePath.toLowerCase())
+		) {
+			throw new Error(`consolidator report has invalid topic path: ${topicPath}`);
+		}
+		if (!existsSync(destination) || !statSync(destination).isFile()) {
+			throw new Error(`consolidator report topic file does not exist: ${topicPath}`);
+		}
+		const realDestination = realpathSync(destination);
+		const realRelative = relative(realRoot, realDestination);
+		if (realRelative === ".." || realRelative.startsWith(`..${sep}`)) {
+			throw new Error(`consolidator report topic path escapes session memory: ${topicPath}`);
+		}
+	}
+
+	for (const timestamp of expected) {
+		if (!seen.has(timestamp)) throw new Error(`consolidator report is missing observation ${timestamp}`);
+	}
+}
+
+export function evaluateConsolidatorTrigger(
+	pi: ExtensionAPI,
+	runtime: Runtime,
+	ctx: TriggerCtx,
+	workerLauncher: typeof spawnWorker = spawnWorker,
+): Promise<void> | undefined {
 	if (!runtime.enabled || runtime.config.passive) return;
 	if (runtime.consolidatorInFlight) return;
 
@@ -95,7 +143,7 @@ export function evaluateConsolidatorTrigger(pi: ExtensionAPI, runtime: Runtime, 
 	}
 	// Deliberately NOT tracked in observerTasks: compaction waits only for in-flight observers,
 	// never the consolidator (design R5). The consolidatorInFlight flag enforces one-at-a-time.
-	void dispatchConsolidator(pi, runtime, ctx, promote);
+	return dispatchConsolidator(pi, runtime, ctx, promote, workerLauncher);
 }
 
 async function dispatchConsolidator(
@@ -103,6 +151,7 @@ async function dispatchConsolidator(
 	runtime: Runtime,
 	ctx: TriggerCtx,
 	promote: Observation[],
+	workerLauncher: typeof spawnWorker,
 ): Promise<void> {
 	const runId = nextRunId();
 	const controller = new AbortController();
@@ -117,19 +166,27 @@ async function dispatchConsolidator(
 			kickoffPrompt: prompt,
 		});
 		const env = buildWorkerEnv("consolidator", { memoryRoot: runtime.memoryRoot, runId });
-		const exit = await spawnWorker({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
+		const exit = await workerLauncher({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
 		recordWorkerCost(pi, runtime, ctx, "consolidator", runId);
 		if (exit.code !== 0) {
 			throw new Error(`consolidator exited with code ${exit.code}${exit.stderr ? `: ${exit.stderr.trim().slice(0, 200)}` : ""}`);
 		}
 
-		// Trust the consolidator: on clean exit it has folded (or discarded) everything we handed it.
+		let report: ReturnType<typeof readConsolidatorResult>;
+		try {
+			report = readConsolidatorResult(runResultPath(runtime.memoryRoot, runId));
+		} catch (error) {
+			const detail = error instanceof Error ? error.message : String(error);
+			throw new Error(`invalid consolidator report: ${detail}`);
+		}
+		validateConsolidatorReport(report.decisions, promote, runtime.memoryRoot);
+
 		// Re-fold against the CURRENT branch so we never tombstone something already dropped or an
 		// observation an observer committed during this run (those are not in the handed batch).
 		const branch = ctx.sessionManager.getBranch();
 		const stillActive = new Set(foldLedger(branch).activeObservations.map((o) => o.timestamp));
-		const toDrop = promote.map((o) => o.timestamp).filter((t) => stillActive.has(t));
+		const toDrop = report.decisions.map((decision) => decision.timestamp).filter((t) => stillActive.has(t));
 
 		if (toDrop.length > 0) {
 			const coversUpToId = lastSourceEntryId(branch);
@@ -157,8 +214,14 @@ async function dispatchConsolidator(
 	}
 }
 
-export function registerConsolidatorTrigger(pi: ExtensionAPI, runtime: Runtime): void {
-	const handler = (_event: unknown, ctx: TriggerCtx) => evaluateConsolidatorTrigger(pi, runtime, ctx);
+export function registerConsolidatorTrigger(
+	pi: ExtensionAPI,
+	runtime: Runtime,
+	workerLauncher: typeof spawnWorker = spawnWorker,
+): void {
+	const handler = (_event: unknown, ctx: TriggerCtx) => {
+		void evaluateConsolidatorTrigger(pi, runtime, ctx, workerLauncher);
+	};
 	pi.on("turn_end", handler as never);
 	pi.on("agent_start", handler as never);
 }

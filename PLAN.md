@@ -340,7 +340,7 @@ pi --no-extensions --no-skills --no-prompt-templates --no-context-files \
 Goal: bound the buffer and gain durable, navigable, cross-session topic files.
 
 ### B1. `.memory/` substrate (`src/memory/paths.ts`)
-- `<project>/.memory/` with `INDEX.md`, `<topic>.md`, `.runs/<runId>.json`.
+- `<project>/.memory/` with `INDEX.md`, `<topic>.md`, and `.runs/<runId>.result.json` / `.cost.json` worker IPC.
 - **Atomic writes**: temp file + `rename` over target so the master never reads a half-written
   file. (Consolidator edits files directly in the subprocess; same atomic helper there.)
 - Filesystem **is** the recall interface — master uses normal `ls`/`read`/`grep`; no `recall`
@@ -352,25 +352,21 @@ Goal: bound the buffer and gain durable, navigable, cross-session topic files.
 - **Strictly one consolidator at a time** (`consolidatorInFlight` flag — design risk 4).
 - Promote **oldest-first**: select the overflow above `poolTargetTokens` (the oldest
   observations), serialize them + the current `.memory/` INDEX into the consolidator prompt.
-- Spawn consolidator subprocess (`OM_WORKER=consolidator`); it edits `.memory/*.md` directly.
-  It produces **no result file** — the file edits are the output, and the run ends by natural
-  exit of `pi -p`.
-- On clean exit (code 0): **tombstone the whole handed batch**, intersected with what is still
-  active: `pi.appendEntry("om.observations.dropped", { observationTimestamps, coversUpToId })`.
-  - **Critical (design risk 4):** the tombstone set = `handedBatch ∩ stillActive`. The handed
-    batch is the enforcement mechanism — an observation an observer committed *during* the run
-    is not in it, so it can never be tombstoned. The consolidator does **not** report back: it
-    must consolidate everything it was given (filing or discarding noise are both valid), so we
-    trust it on clean exit. This guarantees the buffer always drains (a report-subset model
-    would strand un-filed/junk observations in the buffer forever, breaking the bounded-buffer
-    invariant). A flaked-out partial run is recoverable from the worker's global session
-    recording and is the critic tier's job to catch (decision 2).
+- Spawn consolidator subprocess (`OM_WORKER=consolidator`); it edits `.memory/*.md` and writes
+  one accounting report covering every handed observation as saved to a relative topic file or
+  intentionally discarded with a reason.
+- Before any tombstone, reject missing, duplicate, or unknown references and verify every saved
+  destination exists as a topic file. Invalid or missing reports leave the handed observations
+  active.
+- On clean exit with a valid report (code 0), tombstone only reported observations still active:
+  `pi.appendEntry("om.observations.dropped", { observationTimestamps, coversUpToId })`. An
+  observer's during-run observations are not in the handed batch and can never be tombstoned.
 
 ### B3. Consolidator agent (`agent/consolidator/`) (L4)
 - `before_agent_start`: replace system prompt with the topic-routing prompt.
-- `--no-builtin-tools` ⇒ the extension must **register its own** `read`/`write`/`edit`/`ls`/`grep`
-  **scoped to `.memory/`** (design risk 6). No terminal tool: the file edits are the output and
-  the headless run ends by natural exit once the model emits its closing confirmation.
+- `--no-builtin-tools` ⇒ the extension registers its own `read`/`write`/`edit`/`ls`/`grep` and
+  `report_consolidation`, scoped to `.memory/` or the run report file (design risk 6). No terminal
+  tool: topic edits and the structured report are the output.
 - Prompt: create/split/merge topic files; write clean current-state prose; remove superseded
   facts (no tombstone cruft); maintain front-matter (`id, title, summary, updated`). Routing
   aggressiveness is a tunable prompt knob (start conservative: prefer fewer, larger topics).
@@ -498,24 +494,22 @@ Namespace `observational-memory` under `~/.pi/agent/settings.json` and project
 
 **Phase B** — implemented
 10. ✅ `.memory/` paths + atomic write + INDEX render (`src/memory/{paths,index-render}.ts`).
-11. ✅ Consolidator agent: scoped `read/write/edit/ls/grep`, no terminal tool (natural exit)
-    (`agent/consolidator/{prompt,tools}.ts`).
-12. ✅ Consolidator trigger: pool clock, one-at-a-time, oldest-first, tombstone the
-    provided∩still-active batch on clean exit (no report-back); drop `coversUpToId` = tip's
-    last source entry (`src/hooks/consolidator-trigger.ts`).
+11. ✅ Consolidator agent: scoped topic tools plus per-observation accounting report, no terminal
+    tool (`agent/consolidator/{prompt,tools}.ts`).
+12. ✅ Consolidator trigger: pool clock, one-at-a-time, oldest-first; validate complete reports
+    and destination files before tombstoning reported∩still-active observations; drop
+    `coversUpToId` = tip's last source entry (`src/hooks/consolidator-trigger.ts`).
 13. ✅ Memory-map section in the injection block (live from disk at compaction) +
     post-consolidation INDEX.md re-render. `/om:consolidate` + extended `/om:status`.
 14. Acceptance (manual): bounded buffer, clean topic files, cross-session read, `/tree` semantics.
 
-Resolved Phase-B decisions: the consolidator must consolidate everything it is handed
-(filing or discarding noise are both valid), so it does **not** report back — the orchestrator
-tombstones the whole handed batch (∩ still-active) on clean exit. Race-safety comes from the
-handed batch, not a report: a during-run observation is not in it, so it is never tombstoned.
-This also guarantees the buffer drains (a report-subset model would strand un-filed/junk
-observations forever). The orchestrator owns INDEX.md (consolidator never writes it);
-consolidator authors full
-front-matter using an injected current-time; runs in the background concurrent with observers
-(compaction never waits for it).
+Resolved Phase-B decisions: the consolidator accounts for each handed observation as saved to a
+named topic file or intentionally discarded with a reason. The orchestrator validates report
+completeness, uniqueness, references, and saved-file existence before tombstoning; invalid or
+missing reports preserve the active buffer. Race-safety still comes from the handed batch, so a
+during-run observation is never tombstoned. The orchestrator owns INDEX.md (consolidator never
+writes it); the consolidator authors full front-matter using an injected current-time and runs
+in the background concurrent with observers (compaction never waits for it).
 
 ---
 
