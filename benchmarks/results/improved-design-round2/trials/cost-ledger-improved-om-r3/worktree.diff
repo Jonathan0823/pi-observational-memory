@@ -1,0 +1,58 @@
+diff --git a/agent/index.ts b/agent/index.ts
+index 862f692..acbc544 100644
+--- a/agent/index.ts
++++ b/agent/index.ts
+@@ -18,10 +18,23 @@ import { CONSOLIDATOR_SYSTEM } from "./consolidator/prompt.js";
+ import { registerConsolidatorTools } from "./consolidator/tools.js";
+ import { OBSERVER_SYSTEM } from "./observer/prompt.js";
+ import { registerObserverTool } from "./observer/tool.js";
++import { writeWorkerCost, workerCostPath } from "../src/spawn/runs.js";
+ 
+ export default function omWorker(pi: ExtensionAPI): void {
+ 	const role = process.env.OM_WORKER;
+ 	const resultPath = process.env.OM_RESULT_PATH;
++	const runId = process.env.OM_RUN_ID;
++	let totalCost = 0;
++	if (role === "observer" || role === "consolidator") {
++		if (!resultPath || !runId) throw new Error("worker result path/run id not set");
++		pi.on("message_end", async (event: any) => {
++			if (event.message?.role === "assistant") {
++				const cost = event.message.usage?.cost?.total;
++				if (typeof cost === "number" && Number.isFinite(cost) && cost >= 0) totalCost += cost;
++				writeWorkerCost(workerCostPath(process.cwd(), runId), { role, runId, cost: totalCost });
++			}
++		});
++	}
+ 
+ 	if (role === "observer") {
+ 		if (!resultPath) throw new Error("OM_RESULT_PATH not set for observer worker");
+diff --git a/src/spawn/runs.ts b/src/spawn/runs.ts
+index 887cd73..73cfd6c 100644
+--- a/src/spawn/runs.ts
++++ b/src/spawn/runs.ts
+@@ -21,6 +21,25 @@ export type ObserverRunResult = {
+ 	observations: RawObservation[];
+ };
+ 
++export type WorkerCost = { role: "observer" | "consolidator"; runId: string; cost: number };
++
++export function workerCostPath(cwd: string, runId: string): string {
++	return join(runsDir(cwd), `${runId}.cost.json`);
++}
++
++export function readWorkerCost(path: string): WorkerCost | undefined {
++	try {
++		const raw = JSON.parse(readFileSync(path, "utf-8")) as Record<string, unknown>;
++		if ((raw.role !== "observer" && raw.role !== "consolidator") || typeof raw.runId !== "string" ||
++			typeof raw.cost !== "number" || !Number.isFinite(raw.cost) || raw.cost < 0) return undefined;
++		return { role: raw.role, runId: raw.runId, cost: raw.cost };
++	} catch { return undefined; }
++}
++
++export function writeWorkerCost(path: string, value: WorkerCost): void {
++	atomicWrite(path, JSON.stringify(value));
++}
++
+ export function runsDir(cwd: string): string {
+ 	return join(cwd, ".memory", ".runs");
+ }

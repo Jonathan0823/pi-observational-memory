@@ -1,0 +1,415 @@
+diff --git a/agent/index.ts b/agent/index.ts
+index 862f692..adfc4c1 100644
+--- a/agent/index.ts
++++ b/agent/index.ts
+@@ -18,11 +18,26 @@ import { CONSOLIDATOR_SYSTEM } from "./consolidator/prompt.js";
+ import { registerConsolidatorTools } from "./consolidator/tools.js";
+ import { OBSERVER_SYSTEM } from "./observer/prompt.js";
+ import { registerObserverTool } from "./observer/tool.js";
++import { writeWorkerCost } from "../src/spawn/runs.js";
+ 
+ export default function omWorker(pi: ExtensionAPI): void {
+ 	const role = process.env.OM_WORKER;
+ 	const resultPath = process.env.OM_RESULT_PATH;
+ 
++	if (role === "observer" || role === "consolidator") {
++		if (!resultPath) throw new Error("OM_RESULT_PATH not set for worker");
++		let totalCost = 0;
++		let hasCost = false;
++		pi.on("message_end", (event: any) => {
++			const cost = event.message?.role === "assistant" ? event.message.usage?.cost?.total : undefined;
++			if (typeof cost === "number" && Number.isFinite(cost) && cost >= 0) {
++				totalCost += cost;
++				hasCost = true;
++				writeWorkerCost(resultPath, totalCost);
++			}
++		});
++	}
++
+ 	if (role === "observer") {
+ 		if (!resultPath) throw new Error("OM_RESULT_PATH not set for observer worker");
+ 		registerObserverTool(pi, resultPath);
+diff --git a/src/commands/status.ts b/src/commands/status.ts
+index bdf031f..04dbba4 100644
+--- a/src/commands/status.ts
++++ b/src/commands/status.ts
+@@ -1,5 +1,5 @@
+ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+-import { foldLedger, poolTokens, rawTokensSinceObservationCoverage, type Entry } from "../ledger/index.js";
++import { foldLedger, poolTokens, rawTokensSinceObservationCoverage, totalWorkerCost, type Entry } from "../ledger/index.js";
+ import { listTopics, readJourney } from "../memory/paths.js";
+ import { estimateStringTokens } from "../tokens.js";
+ import type { Runtime } from "../runtime.js";
+@@ -17,6 +17,7 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void
+ 			runtime.ensureConfig(ctx.cwd);
+ 			const branch = ctx.sessionManager.getBranch() as Entry[];
+ 			const folded = foldLedger(branch);
++			const workerCost = totalWorkerCost(ctx.sessionManager.getEntries?.() ?? branch);
+ 			const sinceObservation = rawTokensSinceObservationCoverage(branch);
+ 			const contextTokens = ctx.getContextUsage?.()?.tokens ?? null;
+ 			const pool = poolTokens(folded.activeObservations);
+@@ -29,6 +30,7 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void
+ 				`  active observations: ${folded.activeObservations.length}`,
+ 				`  next observer: ${sinceObservation.toLocaleString()} / ${runtime.config.chunkTokens.toLocaleString()} tok`,
+ 				`  pool: ${pool.toLocaleString()} tok (target ${runtime.config.poolTargetTokens.toLocaleString()}, consolidate at ${runtime.config.consolidateAtPoolTokens.toLocaleString()})`,
++				`  worker usage cost: $${workerCost.toFixed(4)}`,
+ 				`  consolidator: ${runtime.consolidatorInFlight ? "running" : "idle"}`,
+ 				`  last compaction wait: ${runtime.lastCompactionObserverWait ?? "n/a"}`,
+ 				`  topic files: ${topicCount}`,
+diff --git a/src/hooks/consolidator-trigger.ts b/src/hooks/consolidator-trigger.ts
+index 621fe0e..a73adce 100644
+--- a/src/hooks/consolidator-trigger.ts
++++ b/src/hooks/consolidator-trigger.ts
+@@ -32,12 +32,13 @@ import { renderIndexFile } from "../memory/index-render.js";
+ import { atomicWrite, indexPath, listTopics, readJourney } from "../memory/paths.js";
+ import type { Runtime } from "../runtime.js";
+ import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
++import { readWorkerCost, runResultPath } from "../spawn/runs.js";
+ 
+ type TriggerCtx = {
+ 	cwd: string;
+ 	hasUI: boolean;
+ 	ui?: { notify: (message: string, level?: "info" | "warning" | "error") => void };
+-	sessionManager: { getBranch: () => Entry[] };
++	sessionManager: { getBranch: () => Entry[]; getEntries?: () => Entry[] };
+ 	getContextUsage?: () => { tokens: number | null } | undefined;
+ };
+ 
+@@ -118,6 +119,11 @@ async function dispatchConsolidator(
+ 		});
+ 		const env = buildWorkerEnv("consolidator", { cwd: ctx.cwd, runId });
+ 		const exit = await spawnWorker({ argv, cwd: ctx.cwd, env, signal: controller.signal });
++		const cost = readWorkerCost(runResultPath(ctx.cwd, runId));
++		if (cost !== undefined) {
++			pi.appendEntry("om.worker.cost", { role: "consolidator", runId, cost });
++			runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries?.() ?? ctx.sessionManager.getBranch());
++		}
+ 		if (exit.code !== 0) {
+ 			throw new Error(`consolidator exited with code ${exit.code}${exit.stderr ? `: ${exit.stderr.trim().slice(0, 200)}` : ""}`);
+ 		}
+@@ -140,7 +146,7 @@ async function dispatchConsolidator(
+ 		atomicWrite(indexPath(ctx.cwd), renderIndexFile(listTopics(ctx.cwd)));
+ 
+ 		runtime.status.workerDone(runId, toDrop.length);
+-		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
++		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries?.() ?? ctx.sessionManager.getBranch());
+ 		if (ctx.hasUI && ctx.ui) {
+ 			runtime.queueToast(`om: consolidator promoted ${toDrop.length} obs`, "info", ctx.ui.notify.bind(ctx.ui));
+ 		}
+diff --git a/src/hooks/observer-trigger.ts b/src/hooks/observer-trigger.ts
+index ba99960..fd5dda5 100644
+--- a/src/hooks/observer-trigger.ts
++++ b/src/hooks/observer-trigger.ts
+@@ -14,13 +14,14 @@ import {
+ } from "../ledger/index.js";
+ import type { Runtime } from "../runtime.js";
+ import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
+-import { readObserverResult, runResultPath } from "../spawn/runs.js";
++import { readObserverResult, readWorkerCost, runResultPath } from "../spawn/runs.js";
++import { OM_WORKER_COST } from "../ledger/types.js";
+ 
+ type TriggerCtx = {
+ 	cwd: string;
+ 	hasUI: boolean;
+ 	ui?: { notify: (message: string, level?: "info" | "warning" | "error") => void };
+-	sessionManager: { getBranch: () => Entry[] };
++	sessionManager: { getBranch: () => Entry[]; getEntries?: () => Entry[] };
+ 	getContextUsage?: () => { tokens: number | null } | undefined;
+ };
+ 
+@@ -85,7 +86,7 @@ export function evaluateObserverTriggers(pi: ExtensionAPI, runtime: Runtime, ctx
+ 	}
+ 
+ 	if (startToastLines.length > 0) ui?.notify(startToastLines.join("\n"), "info");
+-	runtime.refreshFooterGauges(sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
++	runtime.refreshFooterGauges(sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, sessionManager.getEntries?.() ?? sessionManager.getBranch());
+ }
+ 
+ async function dispatchObserver(
+@@ -135,6 +136,11 @@ async function dispatchObserver(
+ 		});
+ 		const env = buildWorkerEnv("observer", { cwd: ctx.cwd, runId });
+ 		const exit = await spawnWorker({ argv, cwd: ctx.cwd, env, signal: controller.signal });
++		const cost = readWorkerCost(runResultPath(ctx.cwd, runId));
++		if (cost !== undefined) {
++			pi.appendEntry(OM_WORKER_COST, { role: "observer", runId, cost });
++			runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries?.() ?? ctx.sessionManager.getBranch());
++		}
+ 		if (exit.code !== 0) {
+ 			throw new Error(`observer exited with code ${exit.code}${exit.stderr ? `: ${exit.stderr.trim().slice(0, 200)}` : ""}`);
+ 		}
+@@ -151,7 +157,7 @@ async function dispatchObserver(
+ 			pi.appendEntry(OM_OBSERVATIONS_RECORDED, { observations, coversUpToId });
+ 		}
+ 		runtime.status.workerDone(runId, observations.length);
+-		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
++		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries?.() ?? ctx.sessionManager.getBranch());
+ 		if (ctx.hasUI && ctx.ui) {
+ 			// Route through the coalescer: if another observer finishes in the same
+ 			// tick its line joins this one in a single multi-line notify call.
+diff --git a/src/index.ts b/src/index.ts
+index 64b393c..d75eb29 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -47,7 +47,7 @@ export default function observationalMemory(pi: ExtensionAPI): void {
+ 		const branch = ctx.sessionManager.getBranch() as Entry[];
+ 		runtime.enabled = readGateFromLedger(branch);
+ 		attachIfEnabled(ctx);
+-		runtime.refreshFooterGauges(branch, ctx.getContextUsage?.()?.tokens ?? null);
++		runtime.refreshFooterGauges(branch, ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries?.() ?? branch);
+ 	});
+ 
+ 	pi.on("session_shutdown", () => {
+@@ -68,7 +68,7 @@ export default function observationalMemory(pi: ExtensionAPI): void {
+ 			pi.appendEntry(OM_ENABLED, { enabled: next });
+ 			if (next) {
+ 				attachIfEnabled(ctx);
+-				runtime.refreshFooterGauges(ctx.sessionManager.getBranch() as Entry[], ctx.getContextUsage?.()?.tokens ?? null);
++				runtime.refreshFooterGauges(ctx.sessionManager.getBranch() as Entry[], ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries?.() ?? ctx.sessionManager.getBranch());
+ 			} else {
+ 				runtime.abortAllWorkers();
+ 				runtime.status.detach();
+diff --git a/src/ledger/fold.ts b/src/ledger/fold.ts
+index 7950fc4..8ff029d 100644
+--- a/src/ledger/fold.ts
++++ b/src/ledger/fold.ts
+@@ -3,10 +3,22 @@ import {
+ 	isObservationsRecordedData,
+ 	OM_OBSERVATIONS_DROPPED,
+ 	OM_OBSERVATIONS_RECORDED,
++	OM_WORKER_COST,
++	isWorkerCostData,
+ 	type Entry,
+ 	type Observation,
+ } from "./types.js";
+ 
++export function totalWorkerCost(entries: Entry[]): number {
++	let total = 0;
++	for (const entry of entries) {
++		if (entry.type !== "custom" || entry.customType !== OM_WORKER_COST || !isWorkerCostData(entry.data)) continue;
++		const next = total + entry.data.cost;
++		if (Number.isFinite(next)) total = next;
++	}
++	return total;
++}
++
+ export type FoldLedgerOptions = {
+ 	/** Fold entries from branch root through this entry id, inclusive. Omit to fold through branch tip. */
+ 	upToEntryId?: string;
+@@ -21,6 +33,7 @@ export type FoldedLedger = {
+ 	droppedObservationTimestamps: Set<string>;
+ 	/** First-valid observation records by timestamp (id), including dropped ones. */
+ 	observationsByTimestamp: Map<string, Observation>;
++	workerCost: number;
+ };
+ 
+ function foldEndIndex(entries: Entry[], upToEntryId: string | undefined): number {
+@@ -44,12 +57,21 @@ function isCustomEntry(entry: Entry, customType: string): boolean {
+ export function foldLedger(entries: Entry[], options: FoldLedgerOptions = {}): FoldedLedger {
+ 	const observationsByTimestamp = new Map<string, Observation>();
+ 	const droppedObservationTimestamps = new Set<string>();
++	let workerCost = 0;
+ 	const endIdx = foldEndIndex(entries, options.upToEntryId);
+ 
+ 	for (let i = 0; i <= endIdx; i++) {
+ 		const entry = entries[i];
+ 		if (!entry) continue;
+ 
++		if (isCustomEntry(entry, OM_WORKER_COST)) {
++			if (isWorkerCostData(entry.data)) {
++				const next = workerCost + entry.data.cost;
++				if (Number.isFinite(next)) workerCost = next;
++			}
++			continue;
++		}
++
+ 		if (isCustomEntry(entry, OM_OBSERVATIONS_RECORDED)) {
+ 			if (!isObservationsRecordedData(entry.data)) continue;
+ 			for (const observation of entry.data.observations) {
+@@ -78,5 +100,6 @@ export function foldLedger(entries: Entry[], options: FoldLedgerOptions = {}): F
+ 		activeObservations,
+ 		droppedObservationTimestamps,
+ 		observationsByTimestamp,
++		workerCost,
+ 	};
+ }
+diff --git a/src/ledger/types.ts b/src/ledger/types.ts
+index 6f5853c..e8cde33 100644
+--- a/src/ledger/types.ts
++++ b/src/ledger/types.ts
+@@ -15,6 +15,19 @@ export const OM_OBSERVATIONS_DROPPED = "om.observations.dropped";
+ export const OM_FOLDED = "om.folded";
+ /** Per-session on/off gate state (default OFF). See src/index.ts. */
+ export const OM_ENABLED = "om.enabled";
++/** Persisted actual worker usage cost. */
++export const OM_WORKER_COST = "om.worker.cost";
++
++export type WorkerRole = "observer" | "consolidator";
++export type WorkerCostData = { role: WorkerRole; runId: string; cost: number };
++
++export function isWorkerCostData(value: unknown): value is WorkerCostData {
++	if (!value || typeof value !== "object") return false;
++	const data = value as Record<string, unknown>;
++	return (data.role === "observer" || data.role === "consolidator") &&
++		typeof data.runId === "string" && data.runId.length > 0 &&
++		typeof data.cost === "number" && Number.isFinite(data.cost) && data.cost >= 0;
++}
+ /**
+  * Synthetic continuation message used to resume the agent loop after a mid-run compaction
+  * (a `turn_end` that was NOT the run's terminal turn). Carried as a `role: "custom"` message
+diff --git a/src/runtime.ts b/src/runtime.ts
+index e5e338b..97e529c 100644
+--- a/src/runtime.ts
++++ b/src/runtime.ts
+@@ -1,5 +1,5 @@
+ import { type Config, DEFAULTS, loadConfig } from "./config.js";
+-import { foldLedger, poolTokens, rawTokensSinceObservationCoverage, type Entry } from "./ledger/index.js";
++import { foldLedger, poolTokens, rawTokensSinceObservationCoverage, totalWorkerCost, type Entry } from "./ledger/index.js";
+ import { StatusController } from "./ui/status-controller.js";
+ 
+ /**
+@@ -105,9 +105,10 @@ export class Runtime {
+ 	}
+ 
+ 	/** Recompute the live footer gauges (next-observer + pool + context) from the current branch. */
+-	refreshFooterGauges(branch: Entry[], contextTokens?: number | null): void {
++	refreshFooterGauges(branch: Entry[], contextTokens?: number | null, allEntries: Entry[] = branch): void {
+ 		if (!this.enabled) return;
+ 		const folded = foldLedger(branch);
++		this.status.setTotalCost(totalWorkerCost(allEntries));
+ 		this.status.setGauges({
+ 			nextValue: rawTokensSinceObservationCoverage(branch),
+ 			nextMax: this.config.chunkTokens,
+diff --git a/src/spawn/runs.ts b/src/spawn/runs.ts
+index 887cd73..e899a8b 100644
+--- a/src/spawn/runs.ts
++++ b/src/spawn/runs.ts
+@@ -19,8 +19,11 @@ export type RawObservation = {
+ 
+ export type ObserverRunResult = {
+ 	observations: RawObservation[];
++	cost?: number;
+ };
+ 
++export type WorkerRunResult = { observations?: RawObservation[]; cost?: number };
++
+ export function runsDir(cwd: string): string {
+ 	return join(cwd, ".memory", ".runs");
+ }
+@@ -49,10 +52,36 @@ export function readObserverResult(path: string): ObserverRunResult {
+ 	if (!raw || typeof raw !== "object" || !Array.isArray((raw as { observations?: unknown }).observations)) {
+ 		throw new Error("observer result missing observations array");
+ 	}
+-	const observations = (raw as { observations: unknown[] }).observations.filter(isRawObservation);
+-	return { observations };
++	const result = raw as { observations: unknown[]; cost?: unknown };
++	const observations = result.observations.filter(isRawObservation);
++	const cost = typeof result.cost === "number" && Number.isFinite(result.cost) && result.cost >= 0 ? result.cost : undefined;
++	return { observations, cost };
+ }
+ 
+ export function writeObserverResult(path: string, result: ObserverRunResult): void {
+-	atomicWrite(path, JSON.stringify(result));
++	const cost = readWorkerCost(path);
++	atomicWrite(path, JSON.stringify({ ...result, ...(cost === undefined ? {} : { cost }) }));
++}
++
++/** Record cumulative usage without disturbing role-specific worker output. */
++export function writeWorkerCost(path: string, cost: number): void {
++	let result: Record<string, unknown> = {};
++	try {
++		const current: unknown = JSON.parse(readFileSync(path, "utf-8"));
++		if (current && typeof current === "object" && !Array.isArray(current)) result = current as Record<string, unknown>;
++	} catch {
++		// Create a cost-only result for workers with no other IPC payload.
++	}
++	atomicWrite(path, JSON.stringify({ ...result, cost }));
++}
++
++export function readWorkerCost(path: string): number | undefined {
++	try {
++		const raw: unknown = JSON.parse(readFileSync(path, "utf-8"));
++		if (!raw || typeof raw !== "object") return undefined;
++		const cost = (raw as Record<string, unknown>).cost;
++		return typeof cost === "number" && Number.isFinite(cost) && cost >= 0 ? cost : undefined;
++	} catch {
++		return undefined;
++	}
+ }
+diff --git a/src/ui/status-controller.ts b/src/ui/status-controller.ts
+index 51282c7..88068cf 100644
+--- a/src/ui/status-controller.ts
++++ b/src/ui/status-controller.ts
+@@ -62,6 +62,7 @@ export class StatusController {
+ 	private readonly workers = new Map<string, WorkerEntry>();
+ 	private spinnerTimer: ReturnType<typeof setInterval> | undefined;
+ 	private gauges: FooterGauges | undefined;
++	private totalCost = 0;
+ 	private readonly spinnerIntervalMs: number;
+ 	private readonly settleMs: number;
+ 
+@@ -88,6 +89,11 @@ export class StatusController {
+ 	}
+ 
+ 	/** Update (or clear) the live footer gauges and re-render the footer in place. */
++	setTotalCost(cost: number): void {
++		this.totalCost = Number.isFinite(cost) && cost >= 0 ? cost : 0;
++		if (this.ui) this.ui.setStatus(FOOTER_KEY, this.renderFooter());
++	}
++
+ 	setGauges(gauges: FooterGauges | undefined): void {
+ 		this.gauges = gauges;
+ 		if (this.ui) this.ui.setStatus(FOOTER_KEY, this.renderFooter());
+@@ -170,11 +176,11 @@ export class StatusController {
+ 		if (!theme) return "om";
+ 		const base = `${theme.fg("success", "om")}`;
+ 		const g = this.gauges;
+-		if (!g) return base;
++		if (!g) return `${base}  $${this.totalCost.toFixed(4)}`;
+ 		const next = `${theme.fg("success", "O")}${this.gaugeBar(g.nextValue, g.nextMax)}`;
+ 		const pool = `${theme.fg("success", "C")}${this.gaugeBar(g.poolValue, g.poolMax)}`;
+ 		const ctx = `${theme.fg("success", "X")}${this.gaugeBar(g.ctxValue, g.ctxMax)}`;
+-		return `${next}  ${pool}  ${ctx}`;
++		return `${next}  ${pool}  ${ctx}  $${this.totalCost.toFixed(4)}`;
+ 	}
+ 
+ 	/**
+diff --git a/tests/status-controller.test.ts b/tests/status-controller.test.ts
+index 57dfd75..ad02de0 100644
+--- a/tests/status-controller.test.ts
++++ b/tests/status-controller.test.ts
+@@ -18,7 +18,7 @@ describe("StatusController footer gauges", () => {
+ 		const { ui, footer } = fakeUI();
+ 		const sc = new StatusController();
+ 		sc.attach(ui);
+-		expect(footer()).toBe("om");
++		expect(footer()).toBe("om  $0.0000");
+ 	});
+ 
+ 	it("renders observer + consolidate + context fill bars", () => {
+@@ -27,7 +27,7 @@ describe("StatusController footer gauges", () => {
+ 		sc.attach(ui);
+ 		sc.setGauges({ nextValue: 1500, nextMax: 3000, poolValue: 0, poolMax: 10_000, ctxValue: 40_000, ctxMax: 80_000 });
+ 		// next 4/8, pool 0/8, ctx 4/8
+-		expect(footer()).toBe("om  O▕████░░░░▏  C▕░░░░░░░░▏  X▕████░░░░▏");
++		expect(footer()).toBe("om  O▕████░░░░▏  C▕░░░░░░░░▏  X▕████░░░░▏  $0.0000");
+ 	});
+ 
+ 	it("caps a full/over-threshold gauge at all cells", () => {
+@@ -35,7 +35,7 @@ describe("StatusController footer gauges", () => {
+ 		const sc = new StatusController();
+ 		sc.attach(ui);
+ 		sc.setGauges({ nextValue: 0, nextMax: 3000, poolValue: 25_000, poolMax: 10_000, ctxValue: 80_000, ctxMax: 80_000 });
+-		expect(footer()).toBe("om  O▕░░░░░░░░▏  C▕████████▏  X▕████████▏");
++		expect(footer()).toBe("om  O▕░░░░░░░░▏  C▕████████▏  X▕████████▏  $0.0000");
+ 	});
+ 
+ 	it("clearing gauges returns to the bare footer", () => {
+@@ -44,6 +44,6 @@ describe("StatusController footer gauges", () => {
+ 		sc.attach(ui);
+ 		sc.setGauges({ nextValue: 1500, nextMax: 3000, poolValue: 5000, poolMax: 10_000, ctxValue: 10_000, ctxMax: 80_000 });
+ 		sc.setGauges(undefined);
+-		expect(footer()).toBe("om");
++		expect(footer()).toBe("om  $0.0000");
+ 	});
+ });
