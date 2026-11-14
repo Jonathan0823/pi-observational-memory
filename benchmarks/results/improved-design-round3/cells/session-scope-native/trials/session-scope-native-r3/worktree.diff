@@ -1,0 +1,373 @@
+diff --git a/src/commands/status.ts b/src/commands/status.ts
+index 97de009..503fdf3 100644
+--- a/src/commands/status.ts
++++ b/src/commands/status.ts
+@@ -20,8 +20,8 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void
+ 			const sinceObservation = rawTokensSinceObservationCoverage(branch);
+ 			const contextTokens = ctx.getContextUsage?.()?.tokens ?? null;
+ 			const pool = poolTokens(folded.activeObservations);
+-			const topicCount = listTopics(ctx.cwd).length;
+-			const journey = readJourney(ctx.cwd);
++			const topicCount = listTopics(ctx.cwd, ctx.sessionManager).length;
++			const journey = readJourney(ctx.cwd, ctx.sessionManager);
+ 			const { costUsd, runs } = sumSessionCost(ctx.sessionManager.getEntries() as Entry[]);
+ 
+ 			const lines = [
+diff --git a/src/hooks/compaction-hook.ts b/src/hooks/compaction-hook.ts
+index ecd7cc7..e308756 100644
+--- a/src/hooks/compaction-hook.ts
++++ b/src/hooks/compaction-hook.ts
+@@ -150,8 +150,8 @@ export function registerCompactionHook(pi: ExtensionAPI, runtime: Runtime): void
+ 			// Phase B: render the long-term tier live from disk, regenerated each compaction
+ 			// (throwaway projections — cannot decay). The journey is the running descriptive history
+ 			// the consolidator maintains; the map is the topic-file index.
+-			const journey = readJourney(ctx.cwd);
+-			const map = renderMemoryMap(listTopics(ctx.cwd));
++			const journey = readJourney(ctx.cwd, ctx.sessionManager);
++			const map = renderMemoryMap(listTopics(ctx.cwd, ctx.sessionManager));
+ 			const summary = renderSummary(journey, map, projection.observations);
+ 
+ 			return {
+diff --git a/src/hooks/consolidator-trigger.ts b/src/hooks/consolidator-trigger.ts
+index c4bb334..3c31b7d 100644
+--- a/src/hooks/consolidator-trigger.ts
++++ b/src/hooks/consolidator-trigger.ts
+@@ -38,7 +38,7 @@ type TriggerCtx = {
+ 	cwd: string;
+ 	hasUI: boolean;
+ 	ui?: { notify: (message: string, level?: "info" | "warning" | "error") => void };
+-	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[] };
++	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[]; getSessionId: () => string; getHeader: () => { parentSession?: string } | null };
+ 	getContextUsage?: () => { tokens: number | null } | undefined;
+ };
+ 
+@@ -55,9 +55,9 @@ function nextRunId(): string {
+  * overflow lines. The journey is included verbatim so the consolidator updates it in place
+  * (append a segment for this batch; compress the old tail only if over `journeyTargetTokens`).
+  */
+-function buildConsolidatorPrompt(cwd: string, promote: Observation[], journeyTargetTokens: number): string {
+-	const indexText = renderIndexFile(listTopics(cwd));
+-	const journeyText = readJourney(cwd);
++function buildConsolidatorPrompt(cwd: string, promote: Observation[], journeyTargetTokens: number, session: TriggerCtx["sessionManager"]): string {
++	const indexText = renderIndexFile(listTopics(cwd, session));
++	const journeyText = readJourney(cwd, session);
+ 	const journeyWords = Math.round((journeyTargetTokens * 3) / 4);
+ 	const obsLines = sortObservations(promote).map(observationToLine).join("\n");
+ 	return (
+@@ -111,13 +111,13 @@ async function dispatchConsolidator(
+ 	runtime.status.workerStart("consolidator", runId);
+ 
+ 	try {
+-		const prompt = buildConsolidatorPrompt(ctx.cwd, promote, runtime.config.journeyTargetTokens);
++		const prompt = buildConsolidatorPrompt(ctx.cwd, promote, runtime.config.journeyTargetTokens, ctx.sessionManager);
+ 		const argv = buildWorkerArgv({
+ 			model: runtime.config.models.consolidator,
+ 			sessionName: `om-consolidator-${runId}`,
+ 			kickoffPrompt: prompt,
+ 		});
+-		const env = buildWorkerEnv("consolidator", { cwd: ctx.cwd, runId });
++		const env = buildWorkerEnv("consolidator", { cwd: ctx.cwd, runId, session: ctx.sessionManager });
+ 		const exit = await spawnWorker({ argv, cwd: ctx.cwd, env, signal: controller.signal });
+ 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
+ 		recordWorkerCost(pi, runtime, ctx, "consolidator", runId);
+@@ -140,7 +140,7 @@ async function dispatchConsolidator(
+ 		}
+ 
+ 		// Re-render INDEX.md so live ls/grep truth leads the pushed map (design risk 3).
+-		atomicWrite(indexPath(ctx.cwd), renderIndexFile(listTopics(ctx.cwd)));
++		atomicWrite(indexPath(ctx.cwd, ctx.sessionManager), renderIndexFile(listTopics(ctx.cwd, ctx.sessionManager)));
+ 
+ 		runtime.status.workerDone(runId, toDrop.length);
+ 		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
+diff --git a/src/hooks/observer-trigger.ts b/src/hooks/observer-trigger.ts
+index 1bb603c..a0302d9 100644
+--- a/src/hooks/observer-trigger.ts
++++ b/src/hooks/observer-trigger.ts
+@@ -14,6 +14,7 @@ import {
+ 	type SourceSlice,
+ } from "../ledger/index.js";
+ import type { Runtime } from "../runtime.js";
++import { sessionMemoryDir } from "../memory/paths.js";
+ import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
+ import { readObserverResult, readWorkerCost, runCostPath, runResultPath } from "../spawn/runs.js";
+ 
+@@ -21,7 +22,7 @@ type TriggerCtx = {
+ 	cwd: string;
+ 	hasUI: boolean;
+ 	ui?: { notify: (message: string, level?: "info" | "warning" | "error") => void };
+-	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[] };
++	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[]; getSessionId: () => string; getHeader: () => { parentSession?: string } | null };
+ 	getContextUsage?: () => { tokens: number | null } | undefined;
+ };
+ 
+@@ -34,11 +35,12 @@ let runCounter = 0;
+ export function recordWorkerCost(
+ 	pi: ExtensionAPI,
+ 	runtime: Runtime,
+-	ctx: { cwd: string; sessionManager: { getEntries: () => Entry[] } },
++	ctx: { cwd: string; sessionManager: { getEntries: () => Entry[]; getSessionId: () => string; getHeader: () => { parentSession?: string } | null } },
+ 	role: "observer" | "consolidator",
+ 	runId: string,
+ ): void {
+-	const cost = readWorkerCost(runCostPath(ctx.cwd, runId));
++	const root = sessionMemoryDir(ctx.cwd, ctx.sessionManager);
++	const cost = readWorkerCost(runCostPath(ctx.cwd, runId, root));
+ 	if (!cost) return;
+ 	pi.appendEntry(OM_COST, { costUsd: cost.costUsd, role, runId });
+ 	runtime.refreshCost(ctx.sessionManager.getEntries());
+@@ -151,7 +153,7 @@ async function dispatchObserver(
+ 			sessionName: `om-observer-${runId}`,
+ 			kickoffPrompt: userText,
+ 		});
+-		const env = buildWorkerEnv("observer", { cwd: ctx.cwd, runId });
++		const env = buildWorkerEnv("observer", { cwd: ctx.cwd, runId, session: ctx.sessionManager });
+ 		const exit = await spawnWorker({ argv, cwd: ctx.cwd, env, signal: controller.signal });
+ 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
+ 		recordWorkerCost(pi, runtime, ctx, "observer", runId);
+@@ -159,7 +161,7 @@ async function dispatchObserver(
+ 			throw new Error(`observer exited with code ${exit.code}${exit.stderr ? `: ${exit.stderr.trim().slice(0, 200)}` : ""}`);
+ 		}
+ 
+-		const result = readObserverResult(runResultPath(ctx.cwd, runId));
++		const result = readObserverResult(runResultPath(ctx.cwd, runId, sessionMemoryDir(ctx.cwd, ctx.sessionManager)));
+ 		const branch = ctx.sessionManager.getBranch();
+ 		const used = foldLedger(branch).observationsByTimestamp.keys();
+ 		const observations = assignObservationTimestamps(result.observations, {
+diff --git a/src/memory/paths.ts b/src/memory/paths.ts
+index 99af5a2..4b629e3 100644
+--- a/src/memory/paths.ts
++++ b/src/memory/paths.ts
+@@ -10,7 +10,7 @@
+  *
+  * All writes are atomic (temp + rename) so a reader never sees a half-written file.
+  */
+-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
++import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+ import { dirname, join, relative, resolve } from "node:path";
+ 
+ export const INDEX_FILENAME = "INDEX.md";
+@@ -21,21 +21,56 @@ export const INDEX_FILENAME = "INDEX.md";
+  */
+ export const JOURNEY_FILENAME = "JOURNEY.md";
+ 
+-export function memoryDir(cwd: string): string {
+-	return join(cwd, ".memory");
++export type SessionMemoryContext = {
++	getSessionId: () => string;
++	getHeader: () => { parentSession?: string } | null;
++};
++
++/** Resolve and, when available, seed the durable root for the active immutable session ID. */
++export function sessionMemoryDir(cwd: string, session: SessionMemoryContext): string {
++	const sessionId = session.getSessionId();
++	const childRoot = join(cwd, ".memory", sessionId);
++	// Worker IPC may create only .runs before any durable write. That transient directory is
++	// not child memory and must not suppress the one-time parent seed.
++	if (existsSync(childRoot) && readdirSync(childRoot).some((name) => name !== ".runs")) return childRoot;
++
++	const parentPath = session.getHeader()?.parentSession;
++	if (parentPath) {
++		try {
++			const rawHeader = readFileSync(parentPath, "utf-8").split(/\r?\n/, 1)[0];
++			const parentHeader = JSON.parse(rawHeader) as { type?: string; id?: string };
++			if (parentHeader.type === "session" && typeof parentHeader.id === "string") {
++				const parentRoot = join(cwd, ".memory", parentHeader.id);
++				if (existsSync(parentRoot)) {
++					mkdirSync(childRoot, { recursive: true });
++					cpSync(parentRoot, childRoot, {
++						recursive: true,
++						filter: (source) => source !== join(parentRoot, ".runs"),
++					});
++				}
++			}
++		} catch {
++			// Missing/unreadable parent session: defer root creation until a durable write.
++		}
++	}
++	return childRoot;
++}
++
++export function memoryDir(cwd: string, session?: SessionMemoryContext): string {
++	return session ? sessionMemoryDir(cwd, session) : join(cwd, ".memory");
+ }
+ 
+-export function indexPath(cwd: string): string {
+-	return join(memoryDir(cwd), INDEX_FILENAME);
++export function indexPath(cwd: string, session?: SessionMemoryContext): string {
++	return join(memoryDir(cwd, session), INDEX_FILENAME);
+ }
+ 
+-export function journeyPath(cwd: string): string {
+-	return join(memoryDir(cwd), JOURNEY_FILENAME);
++export function journeyPath(cwd: string, session?: SessionMemoryContext): string {
++	return join(memoryDir(cwd, session), JOURNEY_FILENAME);
+ }
+ 
+ /** Read `.memory/JOURNEY.md` body, trimmed. Returns undefined when missing or effectively empty. */
+-export function readJourney(cwd: string): string | undefined {
+-	const path = journeyPath(cwd);
++export function readJourney(cwd: string, session?: SessionMemoryContext): string | undefined {
++	const path = journeyPath(cwd, session);
+ 	if (!existsSync(path)) return undefined;
+ 	try {
+ 		const body = readFileSync(path, "utf-8").trim();
+@@ -58,8 +93,8 @@ export function atomicWrite(path: string, content: string): void {
+  * absolute path, or undefined if it escapes the sandbox. The consolidator's scoped tools use
+  * this to reject any path outside `.memory/` (design risk 6).
+  */
+-export function resolveWithinMemory(cwd: string, requestedPath: string): string | undefined {
+-	const root = resolve(memoryDir(cwd));
++export function resolveWithinMemory(cwd: string, requestedPath: string, session?: SessionMemoryContext): string | undefined {
++	const root = resolve(memoryDir(cwd, session));
+ 	const abs = resolve(root, requestedPath);
+ 	const rel = relative(root, abs);
+ 	if (rel === "" || rel === ".") return abs; // the .memory dir itself
+@@ -111,8 +146,8 @@ export function parseFrontMatter(content: string): { front: TopicFrontMatter; bo
+ }
+ 
+ /** List parsed topic files (every `*.md` except INDEX.md), sorted by filename. */
+-export function listTopics(cwd: string): Topic[] {
+-	const dir = memoryDir(cwd);
++export function listTopics(cwd: string, session?: SessionMemoryContext): Topic[] {
++	const dir = memoryDir(cwd, session);
+ 	if (!existsSync(dir)) return [];
+ 	const topics: Topic[] = [];
+ 	for (const filename of readdirSync(dir)) {
+@@ -124,7 +159,7 @@ export function listTopics(cwd: string): Topic[] {
+ 			continue;
+ 		}
+ 		const { front } = parseFrontMatter(content);
+-		topics.push({ ...front, path: join(".memory", filename), filename });
++		topics.push({ ...front, path: session ? join(".memory", session.getSessionId(), filename) : join(".memory", filename), filename });
+ 	}
+ 	topics.sort((a, b) => (a.filename < b.filename ? -1 : a.filename > b.filename ? 1 : 0));
+ 	return topics;
+diff --git a/src/spawn/launch.ts b/src/spawn/launch.ts
+index 63a7e89..bb917e1 100644
+--- a/src/spawn/launch.ts
++++ b/src/spawn/launch.ts
+@@ -11,7 +11,7 @@ import { realpathSync } from "node:fs";
+ import { fileURLToPath } from "node:url";
+ import { dirname, join, resolve } from "node:path";
+ import type { ConfiguredModel } from "../config.js";
+-import { memoryDir } from "../memory/paths.js";
++import { memoryDir, sessionMemoryDir, type SessionMemoryContext } from "../memory/paths.js";
+ import { runCostPath, runResultPath } from "./runs.js";
+ 
+ /** Repo root = two levels up from src/spawn/. The shared agent extension lives at agent/index.ts. */
+@@ -101,6 +101,7 @@ export function spawnWorker(opts: {
+ export type ObserverLaunchEnv = {
+ 	cwd: string;
+ 	runId: string;
++	session?: SessionMemoryContext;
+ };
+ 
+ /**
+@@ -113,10 +114,10 @@ export function buildWorkerEnv(role: "observer" | "consolidator", opts: Observer
+ 		...process.env,
+ 		OM_WORKER: role,
+ 		OM_RUN_ID: opts.runId,
+-		OM_RESULT_PATH: runResultPath(opts.cwd, opts.runId),
++		OM_RESULT_PATH: runResultPath(opts.cwd, opts.runId, opts.session ? sessionMemoryDir(opts.cwd, opts.session) : undefined),
+ 		// Per-run cost handoff: the worker extension writes pi's built-in usage.cost.total here.
+-		OM_COST_PATH: runCostPath(opts.cwd, opts.runId),
++		OM_COST_PATH: runCostPath(opts.cwd, opts.runId, opts.session ? sessionMemoryDir(opts.cwd, opts.session) : undefined),
+ 		// Sandbox root for the consolidator's scoped file tools (design risk 6).
+-		OM_MEMORY_DIR: memoryDir(opts.cwd),
++		OM_MEMORY_DIR: opts.session ? sessionMemoryDir(opts.cwd, opts.session) : memoryDir(opts.cwd),
+ 	};
+ }
+diff --git a/src/spawn/runs.ts b/src/spawn/runs.ts
+index 61d31b3..cc0b576 100644
+--- a/src/spawn/runs.ts
++++ b/src/spawn/runs.ts
+@@ -21,12 +21,12 @@ export type ObserverRunResult = {
+ 	observations: RawObservation[];
+ };
+ 
+-export function runsDir(cwd: string): string {
+-	return join(cwd, ".memory", ".runs");
++export function runsDir(cwd: string, memoryRoot?: string): string {
++	return join(memoryRoot ?? join(cwd, ".memory"), ".runs");
+ }
+ 
+-export function runResultPath(cwd: string, runId: string): string {
+-	return join(runsDir(cwd), `${runId}.result.json`);
++export function runResultPath(cwd: string, runId: string, memoryRoot?: string): string {
++	return join(runsDir(cwd, memoryRoot), `${runId}.result.json`);
+ }
+ 
+ /**
+@@ -34,8 +34,8 @@ export function runResultPath(cwd: string, runId: string): string {
+  * built-in `usage.cost.total`, read by the orchestrator after the process exits. Uniform
+  * across roles — the consolidator has no observations result file but still reports cost here.
+  */
+-export function runCostPath(cwd: string, runId: string): string {
+-	return join(runsDir(cwd), `${runId}.cost.json`);
++export function runCostPath(cwd: string, runId: string, memoryRoot?: string): string {
++	return join(runsDir(cwd, memoryRoot), `${runId}.cost.json`);
+ }
+ 
+ export type WorkerCostResult = {
+diff --git a/tests/memory.paths.test.ts b/tests/memory.paths.test.ts
+index 3726c7b..2b4dfe4 100644
+--- a/tests/memory.paths.test.ts
++++ b/tests/memory.paths.test.ts
+@@ -1,9 +1,9 @@
+-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
++import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { afterEach, beforeEach, describe, expect, it } from "vitest";
+ import { renderIndexFile, renderMemoryMap } from "../src/memory/index-render.js";
+-import { atomicWrite, listTopics, parseFrontMatter, readJourney, resolveWithinMemory } from "../src/memory/paths.js";
++import { atomicWrite, listTopics, parseFrontMatter, readJourney, resolveWithinMemory, sessionMemoryDir } from "../src/memory/paths.js";
+ 
+ let cwd: string;
+ 
+@@ -20,6 +20,45 @@ function writeTopic(filename: string, content: string): void {
+ 	writeFileSync(join(cwd, ".memory", filename), content, "utf-8");
+ }
+ 
++describe("sessionMemoryDir", () => {
++	function session(id: string, parentSession?: string) {
++		return { getSessionId: () => id, getHeader: () => ({ parentSession }) };
++	}
++
++	it("isolates durable roots by immutable session ID", () => {
++		const a = sessionMemoryDir(cwd, session("session-a"));
++		const b = sessionMemoryDir(cwd, session("session-b"));
++		expect(a).toBe(join(cwd, ".memory", "session-a"));
++		expect(b).toBe(join(cwd, ".memory", "session-b"));
++		expect(a).not.toBe(b);
++	});
++
++	it("seeds from the parent header ID, excluding transient runs, only once", () => {
++		const parentFile = join(cwd, "parent.jsonl");
++		writeFileSync(parentFile, JSON.stringify({ type: "session", id: "immutable-parent" }) + "\n", "utf-8");
++		const parentRoot = join(cwd, ".memory", "immutable-parent");
++		mkdirSync(join(parentRoot, ".runs"), { recursive: true });
++		writeFileSync(join(parentRoot, "topic.md"), "parent topic", "utf-8");
++		writeFileSync(join(parentRoot, ".runs", "temporary.json"), "transient", "utf-8");
++
++		const child = sessionMemoryDir(cwd, session("child-id", parentFile));
++		expect(readFileSync(join(child, "topic.md"), "utf-8")).toBe("parent topic");
++		expect(existsSync(join(child, ".runs"))).toBe(false);
++		writeFileSync(join(child, "topic.md"), "child edit", "utf-8");
++		sessionMemoryDir(cwd, session("child-id", parentFile));
++		expect(readFileSync(join(child, "topic.md"), "utf-8")).toBe("child edit");
++	});
++
++	it("leaves the child root absent when the parent header or memory is unavailable", () => {
++		const parentFile = join(cwd, "no-memory.jsonl");
++		writeFileSync(parentFile, JSON.stringify({ type: "session", id: "parent-without-memory" }) + "\n", "utf-8");
++		const child = sessionMemoryDir(cwd, session("child-no-memory", parentFile));
++		expect(existsSync(child)).toBe(false);
++		const unavailable = sessionMemoryDir(cwd, session("child-no-header", join(cwd, "missing.jsonl")));
++		expect(existsSync(unavailable)).toBe(false);
++	});
++});
++
+ describe("resolveWithinMemory", () => {
+ 	it("resolves paths inside .memory/", () => {
+ 		expect(resolveWithinMemory(cwd, "auth.md")).toBe(join(cwd, ".memory", "auth.md"));

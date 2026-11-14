@@ -1,0 +1,121 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-469a723d8281",
+  "cwd": "/tmp/om-improved-round3/cost-ledger-current-om/worktrees/cost-ledger-current-om-r3",
+  "startedAtEpoch": 1794628785.68665,
+  "elapsedSeconds": 333.1475847740003,
+  "activeElapsedSeconds": 333.1475848930004,
+  "phaseSeconds": {
+    "seed_1_seconds": 2.239563615001316,
+    "seed_2_seconds": 1.2354099820004194,
+    "seed_3_seconds": 1.1706637839997711,
+    "seed_4_seconds": 2.2247602689985797,
+    "seed_5_seconds": 1.1714795339994453,
+    "seed_6_seconds": 3.03086700500171,
+    "seed_7_seconds": 1.6244457789998705,
+    "seed_8_seconds": 1.1867147329994623,
+    "seed_9_seconds": 1.9049003390009602,
+    "seed_10_seconds": 1.1934145970008103,
+    "seed_11_seconds": 1.177425846000915,
+    "seed_12_seconds": 2.992276707000201,
+    "compact_seconds": 8.9979942760001,
+    "implementation_seconds": 302.91833498400047
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state \u2014 for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-14T10:59:00  User provided context-only preparation packets 1/12 through 9/12 for a later explicit implementation task and repeatedly instructed not to implement yet; assistant acknowledged each with CONTEXT_RECEIVED.\n2026-11-14T10:59:00.01  Historical implementation requirements: expose actual pi usage cost from every observer/consolidator worker run, including ephemeral and unsuccessful runs when usage is valid; persist valid costs as session-ledger entries with role/run identity; aggregate costs across all branches including abandoned branches; ignore missing, malformed, non-finite, or negative costs; surface totals in status/footer; add focused tests for aggregation, invalid entries, handoff, and display.\n2026-11-14T10:59:00.02  The observational-memory plan specifies Phase A short-term observer/ledger/injection/compaction plus TUI, followed by Phase B consolidator and .memory files; key decisions include bespoke recorded pi subprocess workers instead of subagents, vendored minimal ledger modules, shared worker extension selected by OM_WORKER, orchestrator-assigned unique observation timestamp IDs, strong development models, and per-session default-OFF /om gate.\n2026-11-14T10:59:00.03  Plan and README describe parallel observers committing branch-local observations, deterministic model-free compaction with cutoff snapped to chunk boundaries, oldest-first consolidation into durable .memory topic files, orchestrator-owned INDEX.md, descriptive JOURNEY.md injected before map and observations, and /tree rollback applying to ledger but not files.\n2026-11-14T10:59:00.04  The supplied repository excerpts describe implementation state including src/index.ts orchestrator, observer/consolidator triggers, compaction hook, minimal ledger, scoped consolidator tools, worker IPC, status/footer gauges and timeline, configuration, and numerous focused Vitest suites; these were reference material, not a request to change files or run tests.",
+    "firstKeptEntryId": "de32b3ec",
+    "tokensBefore": 77531,
+    "estimatedTokensAfter": 20576,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-14T10:59:00",
+          "content": "User provided context-only preparation packets 1/12 through 9/12 for a later explicit implementation task and repeatedly instructed not to implement yet; assistant acknowledged each with CONTEXT_RECEIVED.",
+          "tokenCount": 51
+        },
+        {
+          "timestamp": "2026-11-14T10:59:00.01",
+          "content": "Historical implementation requirements: expose actual pi usage cost from every observer/consolidator worker run, including ephemeral and unsuccessful runs when usage is valid; persist valid costs as session-ledger entries with role/run identity; aggregate costs across all branches including abandoned branches; ignore missing, malformed, non-finite, or negative costs; surface totals in status/footer; add focused tests for aggregation, invalid entries, handoff, and display.",
+          "tokenCount": 119
+        },
+        {
+          "timestamp": "2026-11-14T10:59:00.02",
+          "content": "The observational-memory plan specifies Phase A short-term observer/ledger/injection/compaction plus TUI, followed by Phase B consolidator and .memory files; key decisions include bespoke recorded pi subprocess workers instead of subagents, vendored minimal ledger modules, shared worker extension selected by OM_WORKER, orchestrator-assigned unique observation timestamp IDs, strong development models, and per-session default-OFF /om gate.",
+          "tokenCount": 111
+        },
+        {
+          "timestamp": "2026-11-14T10:59:00.03",
+          "content": "Plan and README describe parallel observers committing branch-local observations, deterministic model-free compaction with cutoff snapped to chunk boundaries, oldest-first consolidation into durable .memory topic files, orchestrator-owned INDEX.md, descriptive JOURNEY.md injected before map and observations, and /tree rollback applying to ledger but not files.",
+          "tokenCount": 91
+        },
+        {
+          "timestamp": "2026-11-14T10:59:00.04",
+          "content": "The supplied repository excerpts describe implementation state including src/index.ts orchestrator, observer/consolidator triggers, compaction hook, minimal ledger, scoped consolidator tools, worker IPC, status/footer gauges and timeline, configuration, and numerous focused Vitest suites; these were reference material, not a request to change files or run tests.",
+          "tokenCount": 91
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/cost-ledger-current-om/trials/cost-ledger-current-om-r3/sessions/2026-11-14T03-59-31-249Z_bench-om-469a723d8281.jsonl",
+    "sessionId": "bench-om-469a723d8281",
+    "userMessages": 13,
+    "assistantMessages": 46,
+    "toolCalls": 53,
+    "toolResults": 53,
+    "totalMessages": 113,
+    "tokens": {
+      "input": 135916,
+      "output": 11610,
+      "cacheRead": 1859200,
+      "cacheWrite": 0,
+      "total": 2006726
+    },
+    "cost": 0.03798860000000002,
+    "contextUsage": {
+      "tokens": 52186,
+      "contextWindow": 272000,
+      "percent": 19.186029411764704
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.007069780000000001,
+    "workerSessions": [
+      {
+        "file": "/home/ejo4358/.pi/agent/sessions/--tmp-om-improved-round3-cost-ledger-current-om-worktrees-cost-ledger-current-om-r3-.memory-bench-om-469a723d8281--/2026-11-14T03-59-49-641Z_01a1d836-2588-70ac-a74e-ebab4093cee5.jsonl",
+        "name": "om-observer-obs-20261114035949-21101-1",
+        "tokens": {
+          "input": 62346,
+          "output": 439,
+          "cacheRead": 61568,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.007069780000000001
+      }
+    ],
+    "workerTokens": {
+      "input": 62346,
+      "output": 439,
+      "cacheRead": 61568,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.007069780000000001,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

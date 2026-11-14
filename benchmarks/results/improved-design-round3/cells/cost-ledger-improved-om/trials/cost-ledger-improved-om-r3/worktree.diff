@@ -1,0 +1,396 @@
+diff --git a/agent/index.ts b/agent/index.ts
+index 862f692..04e3d78 100644
+--- a/agent/index.ts
++++ b/agent/index.ts
+@@ -18,10 +18,28 @@ import { CONSOLIDATOR_SYSTEM } from "./consolidator/prompt.js";
+ import { registerConsolidatorTools } from "./consolidator/tools.js";
+ import { OBSERVER_SYSTEM } from "./observer/prompt.js";
+ import { registerObserverTool } from "./observer/tool.js";
++import { writeWorkerCost } from "../src/spawn/runs.js";
+ 
+ export default function omWorker(pi: ExtensionAPI): void {
+ 	const role = process.env.OM_WORKER;
+ 	const resultPath = process.env.OM_RESULT_PATH;
++	const costPath = process.env.OM_COST_PATH;
++	let totalCost = 0;
++
++	if (costPath) {
++		pi.on("message_end", async (event: { message?: unknown }) => {
++			const message = event.message;
++			if (!message || typeof message !== "object" || (message as { role?: unknown }).role !== "assistant") return;
++			const usage = (message as { usage?: unknown }).usage;
++			if (!usage || typeof usage !== "object") return;
++			const cost = (usage as { cost?: unknown }).cost;
++			if (!cost || typeof cost !== "object") return;
++			const value = (cost as { total?: unknown }).total;
++			if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return;
++			totalCost += value;
++			writeWorkerCost(costPath, totalCost);
++		});
++	}
+ 
+ 	if (role === "observer") {
+ 		if (!resultPath) throw new Error("OM_RESULT_PATH not set for observer worker");
+diff --git a/src/commands/status.ts b/src/commands/status.ts
+index bdf031f..fccf44a 100644
+--- a/src/commands/status.ts
++++ b/src/commands/status.ts
+@@ -16,7 +16,9 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void
+ 			}
+ 			runtime.ensureConfig(ctx.cwd);
+ 			const branch = ctx.sessionManager.getBranch() as Entry[];
++			const allEntries = ctx.sessionManager.getEntries() as Entry[];
+ 			const folded = foldLedger(branch);
++			const totalWorkerCost = foldLedger(allEntries).workerCostTotal;
+ 			const sinceObservation = rawTokensSinceObservationCoverage(branch);
+ 			const contextTokens = ctx.getContextUsage?.()?.tokens ?? null;
+ 			const pool = poolTokens(folded.activeObservations);
+@@ -29,6 +31,7 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void
+ 				`  active observations: ${folded.activeObservations.length}`,
+ 				`  next observer: ${sinceObservation.toLocaleString()} / ${runtime.config.chunkTokens.toLocaleString()} tok`,
+ 				`  pool: ${pool.toLocaleString()} tok (target ${runtime.config.poolTargetTokens.toLocaleString()}, consolidate at ${runtime.config.consolidateAtPoolTokens.toLocaleString()})`,
++				`  worker usage cost: $${totalWorkerCost.toFixed(4)}`,
+ 				`  consolidator: ${runtime.consolidatorInFlight ? "running" : "idle"}`,
+ 				`  last compaction wait: ${runtime.lastCompactionObserverWait ?? "n/a"}`,
+ 				`  topic files: ${topicCount}`,
+diff --git a/src/hooks/consolidator-trigger.ts b/src/hooks/consolidator-trigger.ts
+index 621fe0e..d075347 100644
+--- a/src/hooks/consolidator-trigger.ts
++++ b/src/hooks/consolidator-trigger.ts
+@@ -18,6 +18,7 @@
+ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+ import {
+ 	OM_OBSERVATIONS_DROPPED,
++	OM_WORKER_COST,
+ 	foldLedger,
+ 	lastSourceEntryId,
+ 	observationToLine,
+@@ -32,12 +33,13 @@ import { renderIndexFile } from "../memory/index-render.js";
+ import { atomicWrite, indexPath, listTopics, readJourney } from "../memory/paths.js";
+ import type { Runtime } from "../runtime.js";
+ import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
++import { readWorkerCost, runCostPath } from "../spawn/runs.js";
+ 
+ type TriggerCtx = {
+ 	cwd: string;
+ 	hasUI: boolean;
+ 	ui?: { notify: (message: string, level?: "info" | "warning" | "error") => void };
+-	sessionManager: { getBranch: () => Entry[] };
++	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[] };
+ 	getContextUsage?: () => { tokens: number | null } | undefined;
+ };
+ 
+@@ -140,7 +142,7 @@ async function dispatchConsolidator(
+ 		atomicWrite(indexPath(ctx.cwd), renderIndexFile(listTopics(ctx.cwd)));
+ 
+ 		runtime.status.workerDone(runId, toDrop.length);
+-		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
++		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries());
+ 		if (ctx.hasUI && ctx.ui) {
+ 			runtime.queueToast(`om: consolidator promoted ${toDrop.length} obs`, "info", ctx.ui.notify.bind(ctx.ui));
+ 		}
+@@ -150,6 +152,11 @@ async function dispatchConsolidator(
+ 		runtime.status.workerError(runId);
+ 		if (ctx.hasUI) ctx.ui?.notify(`om: consolidator failed: ${message}`, "error");
+ 	} finally {
++		const cost = readWorkerCost(runCostPath(ctx.cwd, runId));
++		if (cost !== undefined) {
++			pi.appendEntry(OM_WORKER_COST, { role: "consolidator", runId, cost });
++			runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries());
++		}
+ 		runtime.consolidatorController = undefined;
+ 		runtime.consolidatorInFlight = false;
+ 	}
+diff --git a/src/hooks/observer-trigger.ts b/src/hooks/observer-trigger.ts
+index ba99960..f03d8eb 100644
+--- a/src/hooks/observer-trigger.ts
++++ b/src/hooks/observer-trigger.ts
+@@ -9,18 +9,19 @@ import {
+ 	selectSourceSlice,
+ 	serializeSourceAddressedBranchEntries,
+ 	OM_OBSERVATIONS_RECORDED,
++	OM_WORKER_COST,
+ 	type Entry,
+ 	type SourceSlice,
+ } from "../ledger/index.js";
+ import type { Runtime } from "../runtime.js";
+ import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
+-import { readObserverResult, runResultPath } from "../spawn/runs.js";
++import { readObserverResult, readWorkerCost, runCostPath, runResultPath } from "../spawn/runs.js";
+ 
+ type TriggerCtx = {
+ 	cwd: string;
+ 	hasUI: boolean;
+ 	ui?: { notify: (message: string, level?: "info" | "warning" | "error") => void };
+-	sessionManager: { getBranch: () => Entry[] };
++	sessionManager: { getBranch: () => Entry[]; getEntries: () => Entry[] };
+ 	getContextUsage?: () => { tokens: number | null } | undefined;
+ };
+ 
+@@ -85,7 +86,7 @@ export function evaluateObserverTriggers(pi: ExtensionAPI, runtime: Runtime, ctx
+ 	}
+ 
+ 	if (startToastLines.length > 0) ui?.notify(startToastLines.join("\n"), "info");
+-	runtime.refreshFooterGauges(sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
++	runtime.refreshFooterGauges(sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, sessionManager.getEntries());
+ }
+ 
+ async function dispatchObserver(
+@@ -151,7 +152,7 @@ async function dispatchObserver(
+ 			pi.appendEntry(OM_OBSERVATIONS_RECORDED, { observations, coversUpToId });
+ 		}
+ 		runtime.status.workerDone(runId, observations.length);
+-		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
++		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries());
+ 		if (ctx.hasUI && ctx.ui) {
+ 			// Route through the coalescer: if another observer finishes in the same
+ 			// tick its line joins this one in a single multi-line notify call.
+@@ -169,6 +170,11 @@ async function dispatchObserver(
+ 		// should never be merged with info lines.
+ 		if (ctx.hasUI) ctx.ui?.notify(`om: observer failed: ${message}`, "error");
+ 	} finally {
++		const cost = readWorkerCost(runCostPath(ctx.cwd, runId));
++		if (cost !== undefined) {
++			pi.appendEntry(OM_WORKER_COST, { role: "observer", runId, cost });
++			runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries());
++		}
+ 		runtime.observersInFlight.delete(runId);
+ 	}
+ }
+diff --git a/src/index.ts b/src/index.ts
+index 64b393c..0951543 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -47,7 +47,7 @@ export default function observationalMemory(pi: ExtensionAPI): void {
+ 		const branch = ctx.sessionManager.getBranch() as Entry[];
+ 		runtime.enabled = readGateFromLedger(branch);
+ 		attachIfEnabled(ctx);
+-		runtime.refreshFooterGauges(branch, ctx.getContextUsage?.()?.tokens ?? null);
++		runtime.refreshFooterGauges(branch, ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries() as Entry[]);
+ 	});
+ 
+ 	pi.on("session_shutdown", () => {
+@@ -68,7 +68,7 @@ export default function observationalMemory(pi: ExtensionAPI): void {
+ 			pi.appendEntry(OM_ENABLED, { enabled: next });
+ 			if (next) {
+ 				attachIfEnabled(ctx);
+-				runtime.refreshFooterGauges(ctx.sessionManager.getBranch() as Entry[], ctx.getContextUsage?.()?.tokens ?? null);
++				runtime.refreshFooterGauges(ctx.sessionManager.getBranch() as Entry[], ctx.getContextUsage?.()?.tokens ?? null, ctx.sessionManager.getEntries() as Entry[]);
+ 			} else {
+ 				runtime.abortAllWorkers();
+ 				runtime.status.detach();
+diff --git a/src/ledger/fold.ts b/src/ledger/fold.ts
+index 7950fc4..93a58e6 100644
+--- a/src/ledger/fold.ts
++++ b/src/ledger/fold.ts
+@@ -1,6 +1,8 @@
+ import {
+ 	isObservationsDroppedData,
+ 	isObservationsRecordedData,
++	isWorkerCostData,
++	OM_WORKER_COST,
+ 	OM_OBSERVATIONS_DROPPED,
+ 	OM_OBSERVATIONS_RECORDED,
+ 	type Entry,
+@@ -13,6 +15,9 @@ export type FoldLedgerOptions = {
+ };
+ 
+ export type FoldedLedger = {
++	/** Valid worker costs from every ledger entry on the supplied tree/path, including abandoned branches. */
++	workerCosts: number[];
++	workerCostTotal: number;
+ 	/** Every first-valid observation record through the fold boundary, including dropped ones. */
+ 	observations: Observation[];
+ 	/** Observations not tombstoned by a folded drop entry — the live injected buffer. */
+@@ -44,6 +49,7 @@ function isCustomEntry(entry: Entry, customType: string): boolean {
+ export function foldLedger(entries: Entry[], options: FoldLedgerOptions = {}): FoldedLedger {
+ 	const observationsByTimestamp = new Map<string, Observation>();
+ 	const droppedObservationTimestamps = new Set<string>();
++	const workerCosts: number[] = [];
+ 	const endIdx = foldEndIndex(entries, options.upToEntryId);
+ 
+ 	for (let i = 0; i <= endIdx; i++) {
+@@ -60,6 +66,11 @@ export function foldLedger(entries: Entry[], options: FoldLedgerOptions = {}): F
+ 			continue;
+ 		}
+ 
++		if (isCustomEntry(entry, OM_WORKER_COST)) {
++			if (isWorkerCostData(entry.data)) workerCosts.push(entry.data.cost);
++			continue;
++		}
++
+ 		if (isCustomEntry(entry, OM_OBSERVATIONS_DROPPED)) {
+ 			if (!isObservationsDroppedData(entry.data)) continue;
+ 			for (const timestamp of entry.data.observationTimestamps) {
+@@ -74,6 +85,11 @@ export function foldLedger(entries: Entry[], options: FoldLedgerOptions = {}): F
+ 	);
+ 
+ 	return {
++		workerCosts,
++		workerCostTotal: workerCosts.reduce((total, cost) => {
++			const next = total + cost;
++			return Number.isFinite(next) ? next : total;
++		}, 0),
+ 		observations,
+ 		activeObservations,
+ 		droppedObservationTimestamps,
+diff --git a/src/ledger/types.ts b/src/ledger/types.ts
+index 6f5853c..47e33b8 100644
+--- a/src/ledger/types.ts
++++ b/src/ledger/types.ts
+@@ -11,6 +11,8 @@
+ export const OM_OBSERVATIONS_RECORDED = "om.observations.recorded";
+ /** Promotion tombstones written by the orchestrator after a consolidator run (Phase B). */
+ export const OM_OBSERVATIONS_DROPPED = "om.observations.dropped";
++/** Actual worker usage cost recorded by the orchestrator. */
++export const OM_WORKER_COST = "om.worker.cost";
+ /** Compaction details type stamped into the compaction entry's `details`. */
+ export const OM_FOLDED = "om.folded";
+ /** Per-session on/off gate state (default OFF). See src/index.ts. */
+@@ -55,6 +57,12 @@ export type ObservationsRecordedEntryData = {
+ 	coversUpToId: string;
+ };
+ 
++export type WorkerCostEntryData = {
++	role: "observer" | "consolidator";
++	runId: string;
++	cost: number;
++};
++
+ export type ObservationsDroppedEntryData = {
+ 	observationTimestamps: string[];
+ 	coversUpToId: string;
+@@ -105,6 +113,17 @@ export function isObservationsRecordedData(value: unknown): value is Observation
+ 	);
+ }
+ 
++export function isWorkerCostData(value: unknown): value is WorkerCostEntryData {
++	if (!isPlainRecord(value)) return false;
++	return (
++		(value.role === "observer" || value.role === "consolidator") &&
++		isNonEmptyString(value.runId) &&
++		typeof value.cost === "number" &&
++		Number.isFinite(value.cost) &&
++		value.cost >= 0
++	);
++}
++
+ export function isObservationsDroppedData(value: unknown): value is ObservationsDroppedEntryData {
+ 	if (!isPlainRecord(value)) return false;
+ 	return isNonEmptyStringArray(value.observationTimestamps) && isNonEmptyString(value.coversUpToId);
+diff --git a/src/runtime.ts b/src/runtime.ts
+index e5e338b..679fde9 100644
+--- a/src/runtime.ts
++++ b/src/runtime.ts
+@@ -105,9 +105,10 @@ export class Runtime {
+ 	}
+ 
+ 	/** Recompute the live footer gauges (next-observer + pool + context) from the current branch. */
+-	refreshFooterGauges(branch: Entry[], contextTokens?: number | null): void {
++	refreshFooterGauges(branch: Entry[], contextTokens?: number | null, allEntries: Entry[] = branch): void {
+ 		if (!this.enabled) return;
+ 		const folded = foldLedger(branch);
++		this.status.setWorkerCostTotal(foldLedger(allEntries).workerCostTotal);
+ 		this.status.setGauges({
+ 			nextValue: rawTokensSinceObservationCoverage(branch),
+ 			nextMax: this.config.chunkTokens,
+diff --git a/src/spawn/launch.ts b/src/spawn/launch.ts
+index 1e71c9a..dfe24a6 100644
+--- a/src/spawn/launch.ts
++++ b/src/spawn/launch.ts
+@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
+ import { dirname, join, resolve } from "node:path";
+ import type { ConfiguredModel } from "../config.js";
+ import { memoryDir } from "../memory/paths.js";
+-import { runResultPath } from "./runs.js";
++import { runCostPath, runResultPath } from "./runs.js";
+ 
+ /** Repo root = two levels up from src/spawn/. The shared agent extension lives at agent/index.ts. */
+ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+@@ -114,6 +114,7 @@ export function buildWorkerEnv(role: "observer" | "consolidator", opts: Observer
+ 		OM_WORKER: role,
+ 		OM_RUN_ID: opts.runId,
+ 		OM_RESULT_PATH: runResultPath(opts.cwd, opts.runId),
++		OM_COST_PATH: runCostPath(opts.cwd, opts.runId),
+ 		// Sandbox root for the consolidator's scoped file tools (design risk 6).
+ 		OM_MEMORY_DIR: memoryDir(opts.cwd),
+ 	};
+diff --git a/src/spawn/runs.ts b/src/spawn/runs.ts
+index 887cd73..2b111b9 100644
+--- a/src/spawn/runs.ts
++++ b/src/spawn/runs.ts
+@@ -21,6 +21,29 @@ export type ObserverRunResult = {
+ 	observations: RawObservation[];
+ };
+ 
++export type WorkerCostResult = { cost: number };
++
++export function runCostPath(cwd: string, runId: string): string {
++	return join(runsDir(cwd), `${runId}.cost.json`);
++}
++
++/** A valid cost is a finite, non-negative USD amount. */
++export function readWorkerCost(path: string): number | undefined {
++	try {
++		const raw = JSON.parse(readFileSync(path, "utf-8")) as unknown;
++		if (!raw || typeof raw !== "object") return undefined;
++		const cost = (raw as { cost?: unknown }).cost;
++		return typeof cost === "number" && Number.isFinite(cost) && cost >= 0 ? cost : undefined;
++	} catch {
++		return undefined;
++	}
++}
++
++export function writeWorkerCost(path: string, cost: number): void {
++	if (!Number.isFinite(cost) || cost < 0) return;
++	atomicWrite(path, JSON.stringify({ cost }));
++}
++
+ export function runsDir(cwd: string): string {
+ 	return join(cwd, ".memory", ".runs");
+ }
+diff --git a/src/ui/status-controller.ts b/src/ui/status-controller.ts
+index 51282c7..e20076f 100644
+--- a/src/ui/status-controller.ts
++++ b/src/ui/status-controller.ts
+@@ -62,6 +62,7 @@ export class StatusController {
+ 	private readonly workers = new Map<string, WorkerEntry>();
+ 	private spinnerTimer: ReturnType<typeof setInterval> | undefined;
+ 	private gauges: FooterGauges | undefined;
++	private workerCostTotal: number | undefined;
+ 	private readonly spinnerIntervalMs: number;
+ 	private readonly settleMs: number;
+ 
+@@ -82,11 +83,17 @@ export class StatusController {
+ 		}
+ 		this.workers.clear();
+ 		this.gauges = undefined;
++		this.workerCostTotal = undefined;
+ 		this.ui?.setWidget(WORKERS_WIDGET_KEY, undefined);
+ 		if (this.ui) this.ui.setStatus(FOOTER_KEY, undefined);
+ 		this.ui = undefined;
+ 	}
+ 
++	setWorkerCostTotal(total: number): void {
++		this.workerCostTotal = Number.isFinite(total) && total >= 0 ? total : undefined;
++		if (this.ui) this.ui.setStatus(FOOTER_KEY, this.renderFooter());
++	}
++
+ 	/** Update (or clear) the live footer gauges and re-render the footer in place. */
+ 	setGauges(gauges: FooterGauges | undefined): void {
+ 		this.gauges = gauges;
+@@ -170,11 +177,12 @@ export class StatusController {
+ 		if (!theme) return "om";
+ 		const base = `${theme.fg("success", "om")}`;
+ 		const g = this.gauges;
+-		if (!g) return base;
++		if (!g) return this.workerCostTotal !== undefined ? `${base}  $${this.workerCostTotal.toFixed(4)}` : base;
+ 		const next = `${theme.fg("success", "O")}${this.gaugeBar(g.nextValue, g.nextMax)}`;
+ 		const pool = `${theme.fg("success", "C")}${this.gaugeBar(g.poolValue, g.poolMax)}`;
+ 		const ctx = `${theme.fg("success", "X")}${this.gaugeBar(g.ctxValue, g.ctxMax)}`;
+-		return `${next}  ${pool}  ${ctx}`;
++		const cost = this.workerCostTotal !== undefined ? `  $${this.workerCostTotal.toFixed(4)}` : "";
++		return `${base}  ${next}  ${pool}  ${ctx}${cost}`;
+ 	}
+ 
+ 	/**

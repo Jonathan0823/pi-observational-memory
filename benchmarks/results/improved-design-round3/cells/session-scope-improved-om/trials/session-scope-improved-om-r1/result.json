@@ -1,0 +1,126 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-7f3ee21b6589",
+  "cwd": "/tmp/om-improved-round3/session-scope-improved-om/worktrees/session-scope-improved-om-r1",
+  "startedAtEpoch": 1794633199.3664813,
+  "elapsedSeconds": 284.7101662869991,
+  "activeElapsedSeconds": 284.71016639700065,
+  "phaseSeconds": {
+    "seed_1_seconds": 3.278265933999137,
+    "seed_2_seconds": 1.1942332159997022,
+    "seed_3_seconds": 1.1187659119987075,
+    "seed_4_seconds": 1.0535348560006241,
+    "seed_5_seconds": 1.1781856490015343,
+    "seed_6_seconds": 2.5057584900005168,
+    "seed_7_seconds": 1.0375975000006292,
+    "seed_8_seconds": 1.2740017039996019,
+    "seed_9_seconds": 1.256822765999459,
+    "seed_10_seconds": 1.5827483030006988,
+    "seed_11_seconds": 1.5061456489984266,
+    "seed_12_seconds": 4.32966044099885,
+    "compact_seconds": 5.034697723000136,
+    "implementation_seconds": 258.2920009219997
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state \u2014 for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-14T12:13:00 [source session:bench-om-7f3ee21b6589 entries:d2f16378..cd3af6f5]  User supplied context-only preparation packets 1\u20138 of 12 for a later implementation task; the project-level requirement is to move durable memory from shared `.memory/` into immutable per-session roots `.memory/<sessionId>/`, seed a child/fork once on first touch from its parent discovered through the session header `parentSession` path and header ID, skip `.runs/`, avoid mutable display names/filename IDs as identity, leave child root absent when parent header/root is unavailable until first durable write, never overwrite/reseed existing child memory, and route durable reads/writes, compaction memory-map rendering, journey access, and worker IPC through the owning session root while preserving `/tree` ledger behavior.\n2026-11-14T12:13:00.01 [source session:bench-om-7f3ee21b6589 entries:d2f16378..cd3af6f5]  The provided implementation reference describes observational-memory phases A and B: parallel observer workers commit branch-local timestamp-keyed observations to a ledger; compaction deterministically renders journey, memory map, and observations; consolidators promote oldest observations into durable topic files and tombstone the handed batch; workers are ordinary recorded pi subprocess sessions, with cost handoff and TUI status. Existing `.memory/` paths and worker IPC currently resolve from project cwd, so these are among the paths implicated by the later per-session-root requirement.\n2026-11-14T12:13:00.02 [source session:bench-om-7f3ee21b6589 entries:d2f16378..cd3af6f5]  The supplied references include existing code and tests for session ledger folding, observer/consolidator tools and triggers, compaction cutoff/wait logic, memory paths/index/journey, worker launch/IPC/cost, and configuration; assistant acknowledged each of the eight preparation packets with `CONTEXT_RECEIVED`, and no implementation or test activity occurred in this chunk.",
+    "firstKeptEntryId": "f763d2d2",
+    "tokensBefore": 80688,
+    "estimatedTokensAfter": 28364,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-14T12:13:00",
+          "content": "User supplied context-only preparation packets 1\u20138 of 12 for a later implementation task; the project-level requirement is to move durable memory from shared `.memory/` into immutable per-session roots `.memory/<sessionId>/`, seed a child/fork once on first touch from its parent discovered through the session header `parentSession` path and header ID, skip `.runs/`, avoid mutable display names/filename IDs as identity, leave child root absent when parent header/root is unavailable until first durable write, never overwrite/reseed existing child memory, and route durable reads/writes, compaction memory-map rendering, journey access, and worker IPC through the owning session root while preserving `/tree` ledger behavior.",
+          "tokenCount": 182,
+          "sourceRange": {
+            "sessionId": "bench-om-7f3ee21b6589",
+            "firstEntryId": "d2f16378",
+            "lastEntryId": "cd3af6f5"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:13:00.01",
+          "content": "The provided implementation reference describes observational-memory phases A and B: parallel observer workers commit branch-local timestamp-keyed observations to a ledger; compaction deterministically renders journey, memory map, and observations; consolidators promote oldest observations into durable topic files and tombstone the handed batch; workers are ordinary recorded pi subprocess sessions, with cost handoff and TUI status. Existing `.memory/` paths and worker IPC currently resolve from project cwd, so these are among the paths implicated by the later per-session-root requirement.",
+          "tokenCount": 149,
+          "sourceRange": {
+            "sessionId": "bench-om-7f3ee21b6589",
+            "firstEntryId": "d2f16378",
+            "lastEntryId": "cd3af6f5"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:13:00.02",
+          "content": "The supplied references include existing code and tests for session ledger folding, observer/consolidator tools and triggers, compaction cutoff/wait logic, memory paths/index/journey, worker launch/IPC/cost, and configuration; assistant acknowledged each of the eight preparation packets with `CONTEXT_RECEIVED`, and no implementation or test activity occurred in this chunk.",
+          "tokenCount": 94,
+          "sourceRange": {
+            "sessionId": "bench-om-7f3ee21b6589",
+            "firstEntryId": "d2f16378",
+            "lastEntryId": "cd3af6f5"
+          }
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/session-scope-improved-om/trials/session-scope-improved-om-r1/sessions/2026-11-14T05-13-11-028Z_bench-om-7f3ee21b6589.jsonl",
+    "sessionId": "bench-om-7f3ee21b6589",
+    "userMessages": 13,
+    "assistantMessages": 45,
+    "toolCalls": 48,
+    "toolResults": 48,
+    "totalMessages": 107,
+    "tokens": {
+      "input": 152808,
+      "output": 10175,
+      "cacheRead": 2199552,
+      "cacheWrite": 0,
+      "total": 2362535
+    },
+    "cost": 0.042363819999999996,
+    "contextUsage": {
+      "tokens": 66636,
+      "contextWindow": 272000,
+      "percent": 24.498529411764704
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.0063844,
+    "workerSessions": [
+      {
+        "file": "/home/ejo4358/.pi/agent/sessions/--tmp-om-improved-round3-session-scope-improved-om-worktrees-session-scope-improved-om-r1-.memory-bench-om-7f3ee21b6589--/2026-11-14T05-13-24-982Z_01a1d879-84f6-757e-83fc-1dd0d2145772.jsonl",
+        "name": "om-observer-obs-20261114051324-34611-1",
+        "tokens": {
+          "input": 56276,
+          "output": 400,
+          "cacheRead": 55680,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.0063844
+      }
+    ],
+    "workerTokens": {
+      "input": 56276,
+      "output": 400,
+      "cacheRead": 55680,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0063844,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

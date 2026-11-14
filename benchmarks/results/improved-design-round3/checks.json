@@ -1,0 +1,1078 @@
+[
+  {
+    "trialId": "cost-ledger-native-r1",
+    "task": "cost-ledger",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  11 passed (11)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  11 passed (11)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-native-r2",
+    "task": "cost-ledger",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/ledger.cost.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 2 passed (3)",
+          "Tests  2 failed | 15 passed (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/ledger.cost.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts -t 'worker cost ledger|worker usage IPC|accumulated worker cost'",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  5 passed | 12 skipped (17)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-native-r3",
+    "task": "cost-ledger",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  11 passed (11)"
+        ]
+      },
+      {
+        "command": "npm run typecheck && npx vitest run tests/worker-cost.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  11 passed (11)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck && npx vitest run tests/worker-cost.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  11 passed (11)"
+        ]
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-current-om-r1",
+    "task": "cost-ledger",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-costs.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 2 passed (3)",
+          "Tests  2 failed | 15 passed (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-costs.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts -t 'worker cost aggregation|hands usage cost|invalid cost handoffs|accumulated worker cost'",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  5 passed | 12 skipped (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-costs.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts -t 'worker cost aggregation|hands usage cost|invalid cost handoffs|accumulated worker cost'",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  5 passed | 12 skipped (17)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-current-om-r2",
+    "task": "cost-ledger",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 2 passed (3)",
+          "Tests  2 failed | 15 passed (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  1 passed (1)",
+          "Tests  8 passed (8)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  1 passed (1)",
+          "Tests  5 passed (5)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed (1)",
+          "Tests  1 failed | 4 passed (5)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  1 passed (1)",
+          "Tests  5 passed (5)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-current-om-r3",
+    "task": "cost-ledger",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/ledger.cost.test.ts tests/status-controller.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  17 passed (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/ledger.cost.test.ts tests/status-controller.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  17 passed (17)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-improved-om-r1",
+    "task": "cost-ledger",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/status-controller.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 2 passed (3)",
+          "Tests  2 failed | 15 passed (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/status-controller.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  17 passed (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/status-controller.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  17 passed (17)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-improved-om-r2",
+    "task": "cost-ledger",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/status-controller.test.ts && npm run typecheck",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 1 passed (2)",
+          "Tests  4 failed | 3 passed (7)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/status-controller.test.ts; npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  7 passed (7)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/status-controller.test.ts && npm run typecheck",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 1 passed (2)",
+          "Tests  4 failed | 3 passed (7)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/status-controller.test.ts; npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  7 passed (7)"
+        ]
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "cost-ledger-improved-om-r3",
+    "task": "cost-ledger",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/ledger.fold.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 3 passed (4)",
+          "Tests  1 failed | 21 passed (22)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/ledger.fold.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  22 passed (22)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/ledger.fold.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  22 passed (22)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cost.test.ts tests/ledger.fold.test.ts tests/spawn.smoke.test.ts tests/status-controller.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  22 passed (22)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-native-r1",
+    "task": "session-scope",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  37 passed (37)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  37 passed (37)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-native-r2",
+    "task": "session-scope",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  31 passed (31)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  31 passed (31)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  31 passed (31)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck && git diff --check",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-native-r3",
+    "task": "session-scope",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 2 passed (3)",
+          "Tests  1 failed | 30 passed (31)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts && npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  31 passed (31)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts && npm run typecheck && git diff --check",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  31 passed (31)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts && npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  31 passed (31)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts && npm run typecheck && git diff --check",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  31 passed (31)"
+        ]
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-current-om-r1",
+    "task": "session-scope",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/memory.session-root.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  32 passed (32)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 2,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-current-om-r2",
+    "task": "session-scope",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npm test -- --run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 3 passed (4)",
+          "Tests  1 failed | 27 passed (28)"
+        ]
+      },
+      {
+        "command": "npm test -- --run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  28 passed (28)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm test -- --run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 3 passed (4)",
+          "Tests  1 failed | 27 passed (28)"
+        ]
+      },
+      {
+        "command": "npm test -- --run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  28 passed (28)"
+        ]
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-current-om-r3",
+    "task": "session-scope",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 3 passed (4)",
+          "Tests  2 failed | 31 passed (33)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  33 passed (33)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck && git status --short",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  33 passed (33)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 3 passed (4)",
+          "Tests  2 failed | 31 passed (33)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  33 passed (33)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts tests/cost.test.ts && npm run typecheck && git status --short",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  33 passed (33)"
+        ]
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-improved-om-r1",
+    "task": "session-scope",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/consolidator.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 2 passed (3)",
+          "Tests  2 failed | 30 passed (32)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/consolidator.test.ts tests/spawn.smoke.test.ts tests/ledger.progress.test.ts tests/ledger.projection.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  5 passed (5)",
+          "Tests  51 passed (51)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/consolidator.test.ts tests/spawn.smoke.test.ts tests/ledger.progress.test.ts tests/ledger.projection.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  5 passed (5)",
+          "Tests  51 passed (51)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 2,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-improved-om-r2",
+    "task": "session-scope",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.session-root.test.ts tests/memory.paths.test.ts tests/consolidator.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  31 passed (31)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.session-root.test.ts tests/memory.paths.test.ts tests/consolidator.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  31 passed (31)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.session-root.test.ts tests/memory.paths.test.ts tests/consolidator.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  4 passed (4)",
+          "Tests  31 passed (31)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 2,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "session-scope-improved-om-r3",
+    "task": "session-scope",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  2 failed (2)",
+          "Tests  2 failed | 22 passed (24)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory.paths.test.ts tests/spawn.smoke.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  24 passed (24)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/memory*.test.ts tests/spawn*.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  24 passed (24)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-native-r1",
+    "task": "worker-cwd",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/worker-cwd.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 1,
+        "summary": [
+          "Test Files  1 failed | 2 passed (3)",
+          "Tests  1 failed | 16 passed (17)"
+        ]
+      },
+      {
+        "command": "npx vitest run tests/worker-cwd.test.ts tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  17 passed (17)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-native-r2",
+    "task": "worker-cwd",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  16 passed (16)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-native-r3",
+    "task": "worker-cwd",
+    "condition": "native",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  16 passed (16)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-current-om-r1",
+    "task": "worker-cwd",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  16 passed (16)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "git status --short && rg -n '\"(test|typecheck)' package.json",
+        "exitCode": 0,
+        "summary": []
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-current-om-r2",
+    "task": "worker-cwd",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  16 passed (16)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-current-om-r3",
+    "task": "worker-cwd",
+    "condition": "current-om",
+    "testRuns": [
+      {
+        "command": "npm test -- --run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  17 passed (17)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-improved-om-r1",
+    "task": "worker-cwd",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  16 passed (16)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-improved-om-r2",
+    "task": "worker-cwd",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  16 passed (16)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  },
+  {
+    "trialId": "worker-cwd-improved-om-r3",
+    "task": "worker-cwd",
+    "condition": "improved-om",
+    "testRuns": [
+      {
+        "command": "npx vitest run tests/spawn.smoke.test.ts tests/consolidator.test.ts",
+        "exitCode": 0,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  16 passed (16)"
+        ]
+      }
+    ],
+    "typecheckRuns": [
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0,
+        "summary": []
+      }
+    ],
+    "finalFocusedTestPassed": true,
+    "finalTypecheckPassed": true
+  }
+]

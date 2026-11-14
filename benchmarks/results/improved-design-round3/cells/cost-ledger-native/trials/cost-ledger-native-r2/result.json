@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-fd97dce4b241",
+  "cwd": "/tmp/om-improved-round3/cost-ledger-native/worktrees/cost-ledger-native-r2",
+  "startedAtEpoch": 1794627361.7848608,
+  "elapsedSeconds": 259.1644665420008,
+  "activeElapsedSeconds": 259.1644668750014,
+  "phaseSeconds": {
+    "seed_1_seconds": 1.8578329310003028,
+    "seed_2_seconds": 1.1337409669995395,
+    "seed_3_seconds": 1.1574888659997669,
+    "seed_4_seconds": 2.5270980700006476,
+    "seed_5_seconds": 1.1081121200004418,
+    "seed_6_seconds": 1.1553374129998701,
+    "seed_7_seconds": 1.34266216099968,
+    "seed_8_seconds": 1.0547727299999679,
+    "seed_9_seconds": 1.1517217260006873,
+    "seed_10_seconds": 1.2584886049990018,
+    "seed_11_seconds": 1.1614104000000225,
+    "seed_12_seconds": 2.8525484800011327,
+    "compact_seconds": 15.638286288000018,
+    "implementation_seconds": 225.6515962229987
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\nPrepare context for a later implementation task: expose observer and consolidator workers\u2019 actual `pi` usage costs to the parent, persist valid costs in the session ledger, aggregate totals correctly, and display them in the UI.\n\n## Constraints & Preferences\n- The packets are reference material only; no implementation, tools, file edits, or tests have been requested yet.\n- Preserve the historical requirements for the later implementation:\n  - Hand off valid usage cost from successful, unsuccessful, and ephemeral worker runs.\n  - Persist costs as ledger entries with role/run identity.\n  - Include costs on every branch, including abandoned branches.\n  - Ignore missing, malformed, non-finite, or negative costs without corrupting totals.\n  - Surface total cost in status/footer UI.\n  - Add focused tests for aggregation, invalid entries, handoff, and display.\n\n## Progress\n### Done\n- [x] Received eight context-only packets containing the implementation plan, README, source excerpts, and tests.\n\n### In Progress\n- [ ] Awaiting a separate explicit implementation prompt.\n\n### Blocked\n- No implementation task has been issued.\n\n## Key Decisions\n- **Worker model**: Workers are spawned with bespoke `child_process.spawn` as ordinary recorded `pi` sessions, not via the subagents extension.\n- **Ledger architecture**: Branch-local custom `om.*` entries are folded from the supplied branch path; this supports branch-aware aggregation.\n- **Worker roles**: Shared agent extension branches on `OM_WORKER=observer|consolidator`; parent launch/handoff code is in `src/spawn/launch.ts`, and worker result IPC is in `src/spawn/runs.ts`.\n- **UI surface**: `src/commands/status.ts` and `src/ui/status-controller.ts` manage status and footer display; `Runtime` in `src/runtime.ts` holds in-process state.\n\n## Next Steps\n1. Wait for the explicit implementation prompt.\n2. Then inspect the relevant worker spawn/completion paths, ledger types/folding, runtime totals, status/footer UI, and tests.\n3. Implement the requested cost handoff, persistence, aggregation, display, and focused tests.\n\n## Critical Context\n- Historical cost requirements are explicit in preparation turn 1.\n- Relevant files include `src/hooks/observer-trigger.ts`, `src/hooks/consolidator-trigger.ts`, `src/spawn/launch.ts`, `src/spawn/runs.ts`, `src/ledger/types.ts`, `src/ledger/fold.ts`, `src/runtime.ts`, `src/commands/status.ts`, and `src/ui/status-controller.ts`.\n- The repository excerpts describe observer results via `.memory/.runs/<runId>.result.json`; consolidator output is file edits and it has no result file. Cost handoff will therefore need to account for both worker completion paths.\n- No files have been modified and no tests have been run.",
+    "firstKeptEntryId": "487f21ef",
+    "tokensBefore": 77517,
+    "estimatedTokensAfter": 23269,
+    "usage": {
+      "input": 56742,
+      "output": 733,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "reasoning": 139,
+      "totalTokens": 57475,
+      "cost": {
+        "input": 0.005674200000000001,
+        "output": 0.00036649999999999996,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0.0060407,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/cost-ledger-native/trials/cost-ledger-native-r2/sessions/2026-11-14T03-35-48-927Z_bench-native-fd97dce4b241.jsonl",
+    "sessionId": "bench-native-fd97dce4b241",
+    "userMessages": 13,
+    "assistantMessages": 36,
+    "toolCalls": 39,
+    "toolResults": 39,
+    "totalMessages": 89,
+    "tokens": {
+      "input": 192908,
+      "output": 10188,
+      "cacheRead": 1446912,
+      "cacheWrite": 0,
+      "total": 1650008
+    },
+    "cost": 0.03885391999999999,
+    "contextUsage": {
+      "tokens": 53977,
+      "contextWindow": 272000,
+      "percent": 19.844485294117646
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}
