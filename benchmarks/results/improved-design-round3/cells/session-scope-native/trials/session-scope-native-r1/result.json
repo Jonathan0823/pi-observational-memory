@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-f54f7d0bd783",
+  "cwd": "/tmp/om-improved-round3/session-scope-native/worktrees/session-scope-native-r1",
+  "startedAtEpoch": 1794630757.8190057,
+  "elapsedSeconds": 321.83787292799934,
+  "activeElapsedSeconds": 321.83787325499907,
+  "phaseSeconds": {
+    "seed_1_seconds": 1.8596623320008803,
+    "seed_2_seconds": 1.8081220740004937,
+    "seed_3_seconds": 1.1485421149991453,
+    "seed_4_seconds": 1.1797486089999438,
+    "seed_5_seconds": 2.7666072129995882,
+    "seed_6_seconds": 1.1707003000010445,
+    "seed_7_seconds": 1.2203389819987933,
+    "seed_8_seconds": 2.637656398999752,
+    "seed_9_seconds": 1.5986257519998617,
+    "seed_10_seconds": 4.608089881001433,
+    "seed_11_seconds": 1.767276688999118,
+    "seed_12_seconds": 2.7844675409996853,
+    "compact_seconds": 15.298275418999765,
+    "implementation_seconds": 281.9338419649994
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\n- Later change durable memory from a project-wide `.memory/` root to an immutable per-session root: `.memory/<sessionId>/`.\n- Seed a child/fork session\u2019s memory from its parent once, on first touch, using the parent session header\u2019s `parentSession` path and that session file\u2019s header ID.\n\n## Constraints & Preferences\n- The packets are context only. Do not implement, use tools, edit files, or run tests until a separate explicit implementation prompt arrives.\n- Use session IDs from session headers as identity, not display names or filename IDs.\n- Skip transient `.runs/` data when seeding. Do not create a child root if the parent header or parent memory root is unavailable; never overwrite or re-seed existing child memory on resume.\n- Route durable-memory access, compaction rendering, journey access, and worker IPC through the owning session\u2019s root.\n- Preserve short-term ledger `/tree` behavior; durable per-session files remain independent of ledger branches.\n\n## Progress\n### Done\n- [x] Received context packets 1\u20138/12, containing the plan, README, implementation excerpts, and tests.\n- [x] No implementation or repository changes have been made.\n\n### In Progress\n- [ ] Awaiting the remaining context packets and a separate implementation prompt.\n\n### Blocked\n- No implementation prompt has been provided; the preparation instructions prohibit starting work.\n\n## Key Decisions\n- **Per-session durable memory**: Each session\u2019s files belong under `.memory/<sessionId>/`.\n- **One-time fork seeding**: Copy parent memory on the child\u2019s first touch only, excluding `.runs/`; existing child memory takes precedence.\n- **Immutable identity**: Resolve parent identity from the session header ID at the header\u2019s `parentSession` path.\n- **Ledger remains branch-local**: Do not change short-term ledger folding or `/tree` semantics.\n\n## Next Steps\n1. Continue receiving context packets if provided.\n2. Wait for an explicit implementation prompt after compaction.\n3. On that prompt, inspect the relevant repository state and implement the per-session root and one-time parent seeding requirements, including tests.\n\n## Critical Context\n- Current shared-root implementation is in `src/memory/paths.ts`: `memoryDir(cwd)` returns `<cwd>/.memory`; `indexPath`, `journeyPath`, `readJourney`, and `listTopics` derive paths from it.\n- Compaction reads journey and topic data in `src/hooks/compaction-hook.ts`; it renders the journey/map and ledger observations. `src/hooks/consolidator-trigger.ts` builds prompts, writes `INDEX.md`, and operates on durable memory.\n- Worker memory/IPC roots are currently constructed in `src/spawn/launch.ts` (`buildWorkerEnv`, `OM_MEMORY_DIR`) and `src/spawn/runs.ts` (`runsDir`, result and cost paths). Consolidator tools are rooted via `OM_MEMORY_DIR` in `agent/consolidator/tools.ts`.\n- Tests referencing current behavior include `tests/consolidator.test.ts`, `tests/cost.test.ts`, and `tests/compaction-cutoff.test.ts`.\n- Ledger folding and compaction projection live under `src/ledger/`; preserve their `/tree` behavior.",
+    "firstKeptEntryId": "1803470f",
+    "tokensBefore": 80415,
+    "estimatedTokensAfter": 28146,
+    "usage": {
+      "input": 54005,
+      "output": 837,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "reasoning": 167,
+      "totalTokens": 54842,
+      "cost": {
+        "input": 0.005400500000000001,
+        "output": 0.0004185,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0.005819,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/session-scope-native/trials/session-scope-native-r1/sessions/2026-11-14T04-32-18-106Z_bench-native-f54f7d0bd783.jsonl",
+    "sessionId": "bench-native-f54f7d0bd783",
+    "userMessages": 13,
+    "assistantMessages": 51,
+    "toolCalls": 57,
+    "toolResults": 57,
+    "totalMessages": 122,
+    "tokens": {
+      "input": 208698,
+      "output": 12680,
+      "cacheRead": 2500864,
+      "cacheWrite": 0,
+      "total": 2722242
+    },
+    "cost": 0.05221844000000001,
+    "contextUsage": {
+      "tokens": 68385,
+      "contextWindow": 272000,
+      "percent": 25.141544117647058
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

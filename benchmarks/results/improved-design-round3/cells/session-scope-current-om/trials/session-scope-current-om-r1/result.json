@@ -1,0 +1,116 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-b48920a9de64",
+  "cwd": "/tmp/om-improved-round3/session-scope-current-om/worktrees/session-scope-current-om-r1",
+  "startedAtEpoch": 1794632015.6963973,
+  "elapsedSeconds": 220.96098426200115,
+  "activeElapsedSeconds": 220.9609843850012,
+  "phaseSeconds": {
+    "seed_1_seconds": 2.434825650998391,
+    "seed_2_seconds": 1.284384497001156,
+    "seed_3_seconds": 1.3314913020003587,
+    "seed_4_seconds": 3.193005491999429,
+    "seed_5_seconds": 1.8230833399993571,
+    "seed_6_seconds": 1.6576773870001489,
+    "seed_7_seconds": 1.5016352409984393,
+    "seed_8_seconds": 2.8430672920003417,
+    "seed_9_seconds": 3.922873620000246,
+    "seed_10_seconds": 1.3557128050015308,
+    "seed_11_seconds": 1.3495245230005821,
+    "seed_12_seconds": 3.4454192070006684,
+    "compact_seconds": 6.082902517000548,
+    "implementation_seconds": 188.61754617100087
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state \u2014 for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-14T11:53:00  User supplied a future implementation task: move durable long-term memory from shared project `.memory/` to immutable per-session roots `.memory/<sessionId>/`, where session identity comes from the session header ID, not display names or filename IDs.\n2026-11-14T11:53:00.01  User specified fork seeding: on first touch, discover parent via session header `parentSession` path, read parent file header ID, and seed child memory once from that parent's session-specific root; skip transient `.runs/`, never overwrite/reseed existing child memory on resume, and defer creating child root if parent header or memory root is unreadable/absent until child's first durable write.\n2026-11-14T11:53:00.02  User requires all durable-memory reads/writes, compaction memory-map rendering, journey access, and worker IPC paths to use the owning session's memory root, while preserving short-term ledger `/tree` behavior and independent durable files across ledger branches.\n2026-11-14T11:53:00.03  User provided observational-memory plan, README, implementation excerpts, and tests as context-only reference packets across preparation turns 1\u20138/12; no implementation was requested during those turns.",
+    "firstKeptEntryId": "49146b13",
+    "tokensBefore": 80441,
+    "estimatedTokensAfter": 27834,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-14T11:53:00",
+          "content": "User supplied a future implementation task: move durable long-term memory from shared project `.memory/` to immutable per-session roots `.memory/<sessionId>/`, where session identity comes from the session header ID, not display names or filename IDs.",
+          "tokenCount": 63
+        },
+        {
+          "timestamp": "2026-11-14T11:53:00.01",
+          "content": "User specified fork seeding: on first touch, discover parent via session header `parentSession` path, read parent file header ID, and seed child memory once from that parent's session-specific root; skip transient `.runs/`, never overwrite/reseed existing child memory on resume, and defer creating child root if parent header or memory root is unreadable/absent until child's first durable write.",
+          "tokenCount": 100
+        },
+        {
+          "timestamp": "2026-11-14T11:53:00.02",
+          "content": "User requires all durable-memory reads/writes, compaction memory-map rendering, journey access, and worker IPC paths to use the owning session's memory root, while preserving short-term ledger `/tree` behavior and independent durable files across ledger branches.",
+          "tokenCount": 66
+        },
+        {
+          "timestamp": "2026-11-14T11:53:00.03",
+          "content": "User provided observational-memory plan, README, implementation excerpts, and tests as context-only reference packets across preparation turns 1\u20138/12; no implementation was requested during those turns.",
+          "tokenCount": 51
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/session-scope-current-om/trials/session-scope-current-om-r1/sessions/2026-11-14T04-53-21-109Z_bench-om-b48920a9de64.jsonl",
+    "sessionId": "bench-om-b48920a9de64",
+    "userMessages": 13,
+    "assistantMessages": 40,
+    "toolCalls": 35,
+    "toolResults": 35,
+    "totalMessages": 89,
+    "tokens": {
+      "input": 136684,
+      "output": 6792,
+      "cacheRead": 1642752,
+      "cacheWrite": 0,
+      "total": 1786228
+    },
+    "cost": 0.03349192,
+    "contextUsage": {
+      "tokens": 51225,
+      "contextWindow": 272000,
+      "percent": 18.832720588235293
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.00633712,
+    "workerSessions": [
+      {
+        "file": "/home/ejo4358/.pi/agent/sessions/--tmp-om-improved-round3-session-scope-current-om-worktrees-session-scope-current-om-r1-.memory-bench-om-b48920a9de64--/2026-11-14T04-53-41-116Z_01a1d867-747b-7059-95d0-786b83ecbca8.jsonl",
+        "name": "om-observer-obs-20261114045340-31703-1",
+        "tokens": {
+          "input": 56286,
+          "output": 306,
+          "cacheRead": 55552,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.00633712
+      }
+    ],
+    "workerTokens": {
+      "input": 56286,
+      "output": 306,
+      "cacheRead": 55552,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.00633712,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

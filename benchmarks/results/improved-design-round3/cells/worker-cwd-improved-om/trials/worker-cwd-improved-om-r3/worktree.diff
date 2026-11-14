@@ -1,0 +1,98 @@
+diff --git a/src/hooks/consolidator-trigger.ts b/src/hooks/consolidator-trigger.ts
+index 80947ea..10279f2 100644
+--- a/src/hooks/consolidator-trigger.ts
++++ b/src/hooks/consolidator-trigger.ts
+@@ -118,7 +118,7 @@ async function dispatchConsolidator(
+ 			kickoffPrompt: prompt,
+ 		});
+ 		const env = buildWorkerEnv("consolidator", { memoryRoot: runtime.memoryRoot, runId });
+-		const exit = await spawnWorker({ argv, cwd: ctx.cwd, env, signal: controller.signal });
++		const exit = await spawnWorker({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
+ 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
+ 		recordWorkerCost(pi, runtime, ctx, "consolidator", runId);
+ 		if (exit.code !== 0) {
+diff --git a/src/hooks/observer-trigger.ts b/src/hooks/observer-trigger.ts
+index 5cf9b6c..5812ee8 100644
+--- a/src/hooks/observer-trigger.ts
++++ b/src/hooks/observer-trigger.ts
+@@ -152,7 +152,7 @@ async function dispatchObserver(
+ 			kickoffPrompt: userText,
+ 		});
+ 		const env = buildWorkerEnv("observer", { memoryRoot: runtime.memoryRoot, runId });
+-		const exit = await spawnWorker({ argv, cwd: ctx.cwd, env, signal: controller.signal });
++		const exit = await spawnWorker({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
+ 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
+ 		recordWorkerCost(pi, runtime, ctx, "observer", runId);
+ 		if (exit.code !== 0) {
+diff --git a/src/spawn/launch.ts b/src/spawn/launch.ts
+index 0b3f82d..9cc6d9b 100644
+--- a/src/spawn/launch.ts
++++ b/src/spawn/launch.ts
+@@ -7,7 +7,7 @@
+  * project path in `~/.pi/agent/sessions` and is openable in the session browser.
+  */
+ import { spawn } from "node:child_process";
+-import { realpathSync } from "node:fs";
++import { mkdirSync, realpathSync } from "node:fs";
+ import { fileURLToPath } from "node:url";
+ import { dirname, join, resolve } from "node:path";
+ import type { ConfiguredModel } from "../config.js";
+@@ -63,7 +63,7 @@ export function buildWorkerArgv(opts: {
+ 
+ export type WorkerExit = { code: number | null; signal: NodeJS.Signals | null; stderr: string };
+ 
+-/** Spawn a headless worker; resolve when it exits. cwd is the master's cwd (global store). */
++/** Spawn a headless worker from its owning session's memory root. */
+ export function spawnWorker(opts: {
+ 	argv: string[];
+ 	cwd: string;
+@@ -71,6 +71,9 @@ export function spawnWorker(opts: {
+ 	signal?: AbortSignal;
+ }): Promise<WorkerExit> {
+ 	const [command, ...rest] = opts.argv;
++	// A fresh session may have no durable memory files yet. Still create its scoped root
++	// before spawn so worker-session discovery and all relative filesystem access stay local.
++	mkdirSync(opts.cwd, { recursive: true });
+ 	return new Promise<WorkerExit>((resolvePromise) => {
+ 		const proc = spawn(command, rest, {
+ 			cwd: opts.cwd,
+diff --git a/tests/spawn.smoke.test.ts b/tests/spawn.smoke.test.ts
+index 46baea7..408620c 100644
+--- a/tests/spawn.smoke.test.ts
++++ b/tests/spawn.smoke.test.ts
+@@ -1,9 +1,9 @@
+-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
++import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { afterEach, beforeEach, describe, expect, it } from "vitest";
+ 
+-import { AGENT_EXTENSION_PATH, buildWorkerArgv, buildWorkerEnv, modelArg } from "../src/spawn/launch.js";
++import { AGENT_EXTENSION_PATH, buildWorkerArgv, buildWorkerEnv, modelArg, spawnWorker } from "../src/spawn/launch.js";
+ import { readObserverResult, runResultPath, runsDir, writeObserverResult } from "../src/spawn/runs.js";
+ import { registerObserverTool } from "../agent/observer/tool.js";
+ 
+@@ -48,6 +48,23 @@ describe("launch argv + env", () => {
+ 	it("resolves run paths under the session memory root's .runs", () => {
+ 		expect(runsDir("/proj/.memory/sess-1")).toBe("/proj/.memory/sess-1/.runs");
+ 	});
++
++	it("creates and launches from the worker memory root", async () => {
++		const parent = mkdtempSync(join(tmpdir(), "om-worker-cwd-"));
++		try {
++			const memoryRoot = join(parent, ".memory", "fresh-session");
++			expect(existsSync(memoryRoot)).toBe(false);
++			const exit = await spawnWorker({
++				argv: [process.execPath, "-e", "require('node:fs').writeFileSync('cwd.txt', process.cwd())"],
++				cwd: memoryRoot,
++				env: process.env,
++			});
++			expect(exit.code).toBe(0);
++			expect(readFileSync(join(memoryRoot, "cwd.txt"), "utf-8")).toBe(memoryRoot);
++		} finally {
++			rmSync(parent, { recursive: true, force: true });
++		}
++	});
+ });
+ 
+ describe("observer result IPC round-trip", () => {

@@ -1,0 +1,146 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-2310cfd744e8",
+  "cwd": "/tmp/om-improved-round3/session-scope-improved-om/worktrees/session-scope-improved-om-r3",
+  "startedAtEpoch": 1794633733.1959043,
+  "elapsedSeconds": 260.92710122599965,
+  "activeElapsedSeconds": 260.92710132499997,
+  "phaseSeconds": {
+    "seed_1_seconds": 2.327954790000149,
+    "seed_2_seconds": 2.4782423239994387,
+    "seed_3_seconds": 1.1300818089985114,
+    "seed_4_seconds": 1.1268322669984627,
+    "seed_5_seconds": 1.7119298229990818,
+    "seed_6_seconds": 1.2178800399997272,
+    "seed_7_seconds": 4.241989956999532,
+    "seed_8_seconds": 1.335456790000535,
+    "seed_9_seconds": 1.2229061140005797,
+    "seed_10_seconds": 1.6310199799991096,
+    "seed_11_seconds": 1.3427459369995631,
+    "seed_12_seconds": 5.856315376000566,
+    "compact_seconds": 5.406473700000788,
+    "implementation_seconds": 229.82492572800038
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state \u2014 for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-14T12:22:00 [source session:bench-om-2310cfd744e8 entries:3a00d5e2..4398e0cc]  User stated a future implementation task: move durable memory from project-level `.memory/` to `.memory/<immutable sessionId>/`; discover a fork's parent using the session header's `parentSession` path and that file's header ID, never mutable display names or filename IDs; seed child memory once on first touch, excluding transient `.runs/`, preserve existing child memory on resume, and leave the child root uncreated if parent header or memory root is unavailable until durable write.\n2026-11-14T12:22:00.01 [source session:bench-om-2310cfd744e8 entries:3a00d5e2..4398e0cc]  User requires every durable-memory read/write, compaction memory-map rendering, journey access, and worker IPC path to use the owning session's memory root while preserving short-term ledger `/tree` behavior and keeping durable files independent of ledger branches.\n2026-11-14T12:22:00.02 [source session:bench-om-2310cfd744e8 entries:3a00d5e2..4398e0cc]  The provided observational-memory PLAN describes Phase A ledger-backed short-term memory and Phase B consolidator plus durable `.memory/` topic files, journey, and map; it locks worker spawning to ordinary recorded `pi` subprocess sessions and a default-OFF per-session gate, with observer chunks stored in the master ledger and `/tree` rollback.\n2026-11-14T12:22:00.03 [source session:bench-om-2310cfd744e8 entries:3a00d5e2..4398e0cc]  The project excerpts specify observer/consolidator subprocesses, scoped `.memory/` file tools, worker result/cost IPC, compaction rendering, and commands/configuration; all are contextual reference material, not work already performed in this conversation.\n2026-11-14T12:22:00.04 [source session:bench-om-2310cfd744e8 entries:3a00d5e2..4398e0cc]  User supplied source excerpts for current implementation and tests, including `src/memory/paths.ts`, `src/spawn/launch.ts`, `src/spawn/runs.ts`, hooks, ledger modules, and associated tests; these currently resolve durable memory and IPC paths from project cwd into `.memory/`, and are relevant baseline context for the later session-specific migration.",
+    "firstKeptEntryId": "7b86bc49",
+    "tokensBefore": 80687,
+    "estimatedTokensAfter": 28414,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-14T12:22:00",
+          "content": "User stated a future implementation task: move durable memory from project-level `.memory/` to `.memory/<immutable sessionId>/`; discover a fork's parent using the session header's `parentSession` path and that file's header ID, never mutable display names or filename IDs; seed child memory once on first touch, excluding transient `.runs/`, preserve existing child memory on resume, and leave the child root uncreated if parent header or memory root is unavailable until durable write.",
+          "tokenCount": 122,
+          "sourceRange": {
+            "sessionId": "bench-om-2310cfd744e8",
+            "firstEntryId": "3a00d5e2",
+            "lastEntryId": "4398e0cc"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:22:00.01",
+          "content": "User requires every durable-memory read/write, compaction memory-map rendering, journey access, and worker IPC path to use the owning session's memory root while preserving short-term ledger `/tree` behavior and keeping durable files independent of ledger branches.",
+          "tokenCount": 67,
+          "sourceRange": {
+            "sessionId": "bench-om-2310cfd744e8",
+            "firstEntryId": "3a00d5e2",
+            "lastEntryId": "4398e0cc"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:22:00.02",
+          "content": "The provided observational-memory PLAN describes Phase A ledger-backed short-term memory and Phase B consolidator plus durable `.memory/` topic files, journey, and map; it locks worker spawning to ordinary recorded `pi` subprocess sessions and a default-OFF per-session gate, with observer chunks stored in the master ledger and `/tree` rollback.",
+          "tokenCount": 87,
+          "sourceRange": {
+            "sessionId": "bench-om-2310cfd744e8",
+            "firstEntryId": "3a00d5e2",
+            "lastEntryId": "4398e0cc"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:22:00.03",
+          "content": "The project excerpts specify observer/consolidator subprocesses, scoped `.memory/` file tools, worker result/cost IPC, compaction rendering, and commands/configuration; all are contextual reference material, not work already performed in this conversation.",
+          "tokenCount": 64,
+          "sourceRange": {
+            "sessionId": "bench-om-2310cfd744e8",
+            "firstEntryId": "3a00d5e2",
+            "lastEntryId": "4398e0cc"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:22:00.04",
+          "content": "User supplied source excerpts for current implementation and tests, including `src/memory/paths.ts`, `src/spawn/launch.ts`, `src/spawn/runs.ts`, hooks, ledger modules, and associated tests; these currently resolve durable memory and IPC paths from project cwd into `.memory/`, and are relevant baseline context for the later session-specific migration.",
+          "tokenCount": 88,
+          "sourceRange": {
+            "sessionId": "bench-om-2310cfd744e8",
+            "firstEntryId": "3a00d5e2",
+            "lastEntryId": "4398e0cc"
+          }
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/session-scope-improved-om/trials/session-scope-improved-om-r3/sessions/2026-11-14T05-22-01-613Z_bench-om-2310cfd744e8.jsonl",
+    "sessionId": "bench-om-2310cfd744e8",
+    "userMessages": 13,
+    "assistantMessages": 43,
+    "toolCalls": 44,
+    "toolResults": 44,
+    "totalMessages": 101,
+    "tokens": {
+      "input": 147096,
+      "output": 8639,
+      "cacheRead": 1893120,
+      "cacheWrite": 0,
+      "total": 2048855
+    },
+    "cost": 0.037960300000000016,
+    "contextUsage": {
+      "tokens": 60955,
+      "contextWindow": 272000,
+      "percent": 22.409926470588236
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.006409300000000001,
+    "workerSessions": [
+      {
+        "file": "/home/ejo4358/.pi/agent/sessions/--tmp-om-improved-round3-session-scope-improved-om-worktrees-session-scope-improved-om-r3-.memory-bench-om-2310cfd744e8--/2026-11-14T05-22-18-306Z_01a1d881-a842-744a-8e35-57705d218c7e.jsonl",
+        "name": "om-observer-obs-20261114052218-36104-1",
+        "tokens": {
+          "input": 56330,
+          "output": 439,
+          "cacheRead": 55680,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.006409300000000001
+      }
+    ],
+    "workerTokens": {
+      "input": 56330,
+      "output": 439,
+      "cacheRead": 55680,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.006409300000000001,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

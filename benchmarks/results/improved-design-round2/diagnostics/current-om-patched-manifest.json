@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-14T03:21:52Z",
+  "status": "succeeded",
+  "model": "openai-codex/gpt-6-luna",
+  "settings": {
+    "mainThinking": "high",
+    "observerThinking": "low",
+    "consolidatorThinking": "medium",
+    "workerModel": "openai-codex/gpt-6-luna",
+    "chunkTokens": 60000,
+    "chunkOverlapTokens": 0,
+    "poolTargetTokens": 10000,
+    "consolidateAtPoolTokens": 20000,
+    "compactAtContextTokens": 81000,
+    "tailTokens": 20000,
+    "journeyTargetTokens": 1000,
+    "observerConcurrency": 4,
+    "requestPacingSeconds": 0,
+    "shakedownsPerCell": 1,
+    "measuredRepetitionsPerCell": 0,
+    "execution": "sequential",
+    "memoryDiagnostics": true,
+    "dependencyPreparation": "npm ci before each trial; setup excluded from trial latency"
+  },
+  "piVersion": "1.5.2",
+  "currentOmCommit": "856ff90b0fd5611451576524e699d5a6373e5f2d",
+  "improvedExtension": {
+    "path": "/home/ejo4358/.pi/agent/git/github.com/Jonathan0823/pi-observational-memory/benchmarks/extensions/observational-memory.ts",
+    "sha256": "a32716cabf89d2d93fb7394672b8d63915dddcaf4e30418bdb466299d1d29db0",
+    "sourceCommit": "5e3bd51fdbf751bc1c1a09a1063c9f8e0f6fab23"
+  },
+  "taskSourceManifest": "/home/ejo4358/.pi/agent/git/github.com/Jonathan0823/pi-observational-memory/benchmarks/results/measured-round1/manifest.json",
+  "trials": [
+    {
+      "id": "cost-ledger-current-om-shakedown",
+      "task": "cost-ledger",
+      "condition": "current-om",
+      "kind": "shakedown",
+      "repetition": 1,
+      "taskStartCommit": "009f292ae4885e01c5cc5bced0b02ab8343412f6",
+      "omSourceCommit": "856ff90b0fd5611451576524e699d5a6373e5f2d",
+      "extensionPath": "sources/current-observational-memory.ts",
+      "extensionSha256": "a32716cabf89d2d93fb7394672b8d63915dddcaf4e30418bdb466299d1d29db0",
+      "status": "succeeded",
+      "startedAt": "2026-11-14T03:21:52Z",
+      "finishedAt": "2026-11-14T03:25:06Z",
+      "exitCode": 0,
+      "error": null,
+      "artifactDirectory": "diagnostics/current-om-patched-cost-ledger",
+      "worktree": null,
+      "worktreeCleanupError": null
+    }
+  ],
+  "finishedAt": "2026-11-14T03:25:06Z",
+  "outputType": "diagnostic shakedown; excluded from measured results"
+}

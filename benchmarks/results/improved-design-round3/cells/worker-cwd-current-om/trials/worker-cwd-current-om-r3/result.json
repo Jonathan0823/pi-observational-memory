@@ -1,0 +1,121 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-eb3299f78d7f",
+  "cwd": "/tmp/om-improved-round3/worker-cwd-current-om/worktrees/worker-cwd-current-om-r3",
+  "startedAtEpoch": 1794634877.7846315,
+  "elapsedSeconds": 89.22046792899891,
+  "activeElapsedSeconds": 89.22046805100035,
+  "phaseSeconds": {
+    "seed_1_seconds": 5.047882828999718,
+    "seed_2_seconds": 1.9599377700014884,
+    "seed_3_seconds": 1.3085563380009262,
+    "seed_4_seconds": 2.3272414050006773,
+    "seed_5_seconds": 1.0907596480010397,
+    "seed_6_seconds": 1.7753272499994637,
+    "seed_7_seconds": 1.6342183020005905,
+    "seed_8_seconds": 1.2381613550005568,
+    "seed_9_seconds": 1.2333963380006026,
+    "seed_10_seconds": 1.4331815019995702,
+    "seed_11_seconds": 1.2485024489997159,
+    "seed_12_seconds": 4.223287140999673,
+    "compact_seconds": 5.44052278900017,
+    "implementation_seconds": 59.18743112000084
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state \u2014 for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-14T12:41:00  User provided context-only implementation packets for observational-memory and explicitly stated they were reference data for a later implementation prompt; no implementation was requested in this chunk.\n2026-11-14T12:41:00.01  Historical requirements: subprocess workers must run observers and consolidators from the owning session's `.memory/<sessionId>/` working directory, using the runtime-resolved root (not a display name or project cwd); create that directory before spawn even for fresh sessions without durable files, while preserving model, prompt, environment, result handoff, cancellation, and exit handling.\n2026-11-14T12:41:00.02  Packets describe observational-memory v1 with a default-OFF per-session `/om` gate, parallel headless pi observer workers, branch-local ledger observations, deterministic compaction, a consolidator, and session-scoped `.memory/<sessionId>/` durable memory; workers are ordinary recorded global pi sessions.\n2026-11-14T12:41:00.03  Repository excerpts show post-v1 session memory scoping via immutable session-header id, with fork/clone memory seeded once from the parent excluding `.runs/`; `Runtime.memoryRoot` is set through `ensureSessionMemory` when enabled and passed via `OM_MEMORY_DIR`.\n2026-11-14T12:41:00.04  Context packets contain inconsistent historical descriptions of current implementation: PLAN's A4 says worker cwd is master's cwd; README says consolidator reports tombstones although code/plan say the orchestrator tombstones its handed batch; and excerpts show differing trigger/config defaults. Treat these as supplied snapshot details, not resolved implementation directives.",
+    "firstKeptEntryId": "bcc6d45d",
+    "tokensBefore": 83151,
+    "estimatedTokensAfter": 28843,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-14T12:41:00",
+          "content": "User provided context-only implementation packets for observational-memory and explicitly stated they were reference data for a later implementation prompt; no implementation was requested in this chunk.",
+          "tokenCount": 51
+        },
+        {
+          "timestamp": "2026-11-14T12:41:00.01",
+          "content": "Historical requirements: subprocess workers must run observers and consolidators from the owning session's `.memory/<sessionId>/` working directory, using the runtime-resolved root (not a display name or project cwd); create that directory before spawn even for fresh sessions without durable files, while preserving model, prompt, environment, result handoff, cancellation, and exit handling.",
+          "tokenCount": 99
+        },
+        {
+          "timestamp": "2026-11-14T12:41:00.02",
+          "content": "Packets describe observational-memory v1 with a default-OFF per-session `/om` gate, parallel headless pi observer workers, branch-local ledger observations, deterministic compaction, a consolidator, and session-scoped `.memory/<sessionId>/` durable memory; workers are ordinary recorded global pi sessions.",
+          "tokenCount": 77
+        },
+        {
+          "timestamp": "2026-11-14T12:41:00.03",
+          "content": "Repository excerpts show post-v1 session memory scoping via immutable session-header id, with fork/clone memory seeded once from the parent excluding `.runs/`; `Runtime.memoryRoot` is set through `ensureSessionMemory` when enabled and passed via `OM_MEMORY_DIR`.",
+          "tokenCount": 66
+        },
+        {
+          "timestamp": "2026-11-14T12:41:00.04",
+          "content": "Context packets contain inconsistent historical descriptions of current implementation: PLAN's A4 says worker cwd is master's cwd; README says consolidator reports tombstones although code/plan say the orchestrator tombstones its handed batch; and excerpts show differing trigger/config defaults. Treat these as supplied snapshot details, not resolved implementation directives.",
+          "tokenCount": 95
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/worker-cwd-current-om/trials/worker-cwd-current-om-r3/sessions/2026-11-14T05-41-13-444Z_bench-om-eb3299f78d7f.jsonl",
+    "sessionId": "bench-om-eb3299f78d7f",
+    "userMessages": 13,
+    "assistantMessages": 22,
+    "toolCalls": 15,
+    "toolResults": 15,
+    "totalMessages": 51,
+    "tokens": {
+      "input": 128975,
+      "output": 2128,
+      "cacheRead": 816896,
+      "cacheWrite": 0,
+      "total": 947999
+    },
+    "cost": 0.022130460000000005,
+    "contextUsage": {
+      "tokens": 43308,
+      "contextWindow": 272000,
+      "percent": 15.922058823529412
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.006584240000000001,
+    "workerSessions": [
+      {
+        "file": "/home/ejo4358/.pi/agent/sessions/--tmp-om-improved-round3-worker-cwd-current-om-worktrees-worker-cwd-current-om-r3-.memory-bench-om-eb3299f78d7f--/2026-11-14T05-41-32-645Z_01a1d893-4564-7595-8197-52924a279da1.jsonl",
+        "name": "om-observer-obs-20261114054132-39653-1",
+        "tokens": {
+          "input": 58143,
+          "output": 393,
+          "cacheRead": 57344,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.006584240000000001
+      }
+    ],
+    "workerTokens": {
+      "input": 58143,
+      "output": 393,
+      "cacheRead": 57344,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.006584240000000001,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

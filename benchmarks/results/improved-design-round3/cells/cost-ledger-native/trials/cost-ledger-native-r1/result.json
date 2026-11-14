@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-78a47c6219db",
+  "cwd": "/tmp/om-improved-round3/cost-ledger-native/worktrees/cost-ledger-native-r1",
+  "startedAtEpoch": 1794627110.615345,
+  "elapsedSeconds": 225.30913419899844,
+  "activeElapsedSeconds": 225.30913438599964,
+  "phaseSeconds": {
+    "seed_1_seconds": 4.244350478000342,
+    "seed_2_seconds": 2.660465971999656,
+    "seed_3_seconds": 1.165622484000778,
+    "seed_4_seconds": 1.3310692760005622,
+    "seed_5_seconds": 1.279232401999252,
+    "seed_6_seconds": 1.6166576279993023,
+    "seed_7_seconds": 2.4094051020001643,
+    "seed_8_seconds": 1.2100482790010574,
+    "seed_9_seconds": 1.1432811220001895,
+    "seed_10_seconds": 3.541699780000272,
+    "seed_11_seconds": 1.4508634009998786,
+    "seed_12_seconds": 1.141511633000846,
+    "compact_seconds": 14.39676784599942,
+    "implementation_seconds": 187.6893870719996
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\nPrepare context for a later implementation task adding worker cost accounting to observational-memory:\n- Expose actual `pi` usage cost from observer and consolidator runs to the parent, including ephemeral or unsuccessful runs when valid usage exists.\n- Persist valid costs as session-ledger entries with role/run identity; aggregate costs across every branch, including abandoned branches.\n- Ignore missing, malformed, non-finite, or negative costs; surface totals in status/footer UI; add focused tests.\n\n## Constraints & Preferences\n- The packets are reference context only. Do not implement, edit files, run tests, or use tools until a separate explicit implementation prompt arrives.\n- Workers are headless spawned `pi` subprocesses; the parent orchestrator owns ledger commits and UI.\n- Preserve branch-aware session-ledger behavior and existing observer/consolidator workflow.\n\n## Progress\n### Done\n- [x] Received preparation packets 1\u20138 with plan, repository excerpts, architecture, and tests.\n- [x] No implementation work has been performed.\n\n### In Progress\n- [ ] Await the explicit implementation prompt.\n\n### Blocked\n- Implementation is intentionally blocked until the user provides that prompt.\n\n## Key Decisions\n- **Subprocess workers remain ordinary recorded `pi` sessions**: launched via `child_process.spawn`, preserving inspectability and global session recording.\n- **Parent owns cost persistence and aggregation**: workers must hand off usage to the orchestrator, which records ledger entries.\n- **Invalid costs must not affect totals**: only valid finite, nonnegative costs are eligible for persistence/aggregation.\n- **Session-wide totals include abandoned branches**: aggregation must not be limited to the currently active branch.\n\n## Next Steps\n1. Wait for the explicit implementation request.\n2. On receipt, inspect the relevant spawn, ledger, runtime, status/footer, and test code.\n3. Implement cost handoff, ledger persistence and aggregation, UI display, and focused tests per the requirements.\n\n## Critical Context\n- Repository is `observational-memory`; orchestrator entry is `src/index.ts`, worker launch is `src/spawn/launch.ts`, and worker IPC currently lives in `src/spawn/runs.ts`.\n- Observer and consolidator subprocess dispatch paths are `src/hooks/observer-trigger.ts` and `src/hooks/consolidator-trigger.ts`; they use `spawnWorker` and currently process exit/results in the parent.\n- Ledger vocabulary and types are in `src/ledger/types.ts`; folding is in `src/ledger/fold.ts`; ledger exports are gathered by `src/ledger/index.ts`.\n- Status command and footer are `src/commands/status.ts` and `src/ui/status-controller.ts`; runtime state is in `src/runtime.ts`.\n- Existing tests include ledger folding/progress/projection, worker/consolidator tools, pool, rendering, and compaction cutoff tests.",
+    "firstKeptEntryId": "54364dc7",
+    "tokensBefore": 77545,
+    "estimatedTokensAfter": 23297,
+    "usage": {
+      "input": 56742,
+      "output": 753,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "reasoning": 170,
+      "totalTokens": 57495,
+      "cost": {
+        "input": 0.005674200000000001,
+        "output": 0.0003765,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0.006050700000000001,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/cost-ledger-native/trials/cost-ledger-native-r1/sessions/2026-11-14T03-31-41-071Z_bench-native-78a47c6219db.jsonl",
+    "sessionId": "bench-native-78a47c6219db",
+    "userMessages": 13,
+    "assistantMessages": 37,
+    "toolCalls": 41,
+    "toolResults": 41,
+    "totalMessages": 92,
+    "tokens": {
+      "input": 186599,
+      "output": 8507,
+      "cacheRead": 1435776,
+      "cacheWrite": 0,
+      "total": 1630882
+    },
+    "cost": 0.03727116,
+    "contextUsage": {
+      "tokens": 47177,
+      "contextWindow": 272000,
+      "percent": 17.344485294117646
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

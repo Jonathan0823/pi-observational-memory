@@ -1,0 +1,136 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-5afa6864e8d5",
+  "cwd": "/tmp/om-improved-round3/session-scope-improved-om/worktrees/session-scope-improved-om-r2",
+  "startedAtEpoch": 1794633502.8368888,
+  "elapsedSeconds": 207.61850332200083,
+  "activeElapsedSeconds": 207.61850344199956,
+  "phaseSeconds": {
+    "seed_1_seconds": 2.005003795000448,
+    "seed_2_seconds": 2.953221128998848,
+    "seed_3_seconds": 1.2193438069989497,
+    "seed_4_seconds": 1.2416319029998704,
+    "seed_5_seconds": 1.4962787919994298,
+    "seed_6_seconds": 3.3971972380004445,
+    "seed_7_seconds": 2.734175065999807,
+    "seed_8_seconds": 1.2438365310008521,
+    "seed_9_seconds": 1.279224042998976,
+    "seed_10_seconds": 1.1464361079997616,
+    "seed_11_seconds": 1.1573230499998317,
+    "seed_12_seconds": 3.1949300420001236,
+    "compact_seconds": 7.599471543999243,
+    "implementation_seconds": 176.83357662799972
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state \u2014 for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-14T12:18:00 [source session:bench-om-5afa6864e8d5 entries:58c2ab7a..6cbf58fa]  User provided context-only packets for a later implementation task: change project-level `.memory/` to immutable session-specific roots `.memory/<sessionId>/`; identify parents through session header `parentSession` path and header ID, seed child memory once on first touch, skip `.runs/`, avoid overwrite/reseed on resume, and leave root uncreated if parent session/header/memory is unavailable. All durable-memory reads/writes, compaction map rendering, journey and worker IPC must use owning session root; preserve ledger `/tree` behavior and independent durable files.\n2026-11-14T12:18:00.01 [source session:bench-om-5afa6864e8d5 entries:58c2ab7a..6cbf58fa]  Project context describes observational-memory for pi: event-driven orchestrator with default-OFF per-session `/om` gate, parallel subprocess observers committing branch-local `om.*` ledger entries, deterministic compaction projection, and a single consolidator promoting older observations into durable memory. Worker sessions are ordinary recorded global pi sessions; `.memory/.runs/` carries transient IPC.\n2026-11-14T12:18:00.02 [source session:bench-om-5afa6864e8d5 entries:58c2ab7a..6cbf58fa]  The memory project includes `.memory/` topic files, generated `INDEX.md`, and descriptive `JOURNEY.md`; journeys/maps are injected during compaction and durable files do not roll back under `/tree`. Consolidator uses scoped read/write/edit/ls/grep tools, updates topics and journey, and orchestrator re-renders INDEX and tombstones the handed batch intersected with still-active observations.\n2026-11-14T12:18:00.03 [source session:bench-om-5afa6864e8d5 entries:58c2ab7a..6cbf58fa]  Provided source excerpts include worker cost tracking via pi usage and cost-file IPC, session-wide `om.cost` totals, TUI gauges/status, compaction cutoff snapping and observer wait fast path, and tests covering ledger folding, timestamp IDs, compaction boundaries, scoped tools, and cost. No implementation was performed in this context packet.",
+    "firstKeptEntryId": "05f8636d",
+    "tokensBefore": 80686,
+    "estimatedTokensAfter": 28387,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-14T12:18:00",
+          "content": "User provided context-only packets for a later implementation task: change project-level `.memory/` to immutable session-specific roots `.memory/<sessionId>/`; identify parents through session header `parentSession` path and header ID, seed child memory once on first touch, skip `.runs/`, avoid overwrite/reseed on resume, and leave root uncreated if parent session/header/memory is unavailable. All durable-memory reads/writes, compaction map rendering, journey and worker IPC must use owning session root; preserve ledger `/tree` behavior and independent durable files.",
+          "tokenCount": 143,
+          "sourceRange": {
+            "sessionId": "bench-om-5afa6864e8d5",
+            "firstEntryId": "58c2ab7a",
+            "lastEntryId": "6cbf58fa"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:18:00.01",
+          "content": "Project context describes observational-memory for pi: event-driven orchestrator with default-OFF per-session `/om` gate, parallel subprocess observers committing branch-local `om.*` ledger entries, deterministic compaction projection, and a single consolidator promoting older observations into durable memory. Worker sessions are ordinary recorded global pi sessions; `.memory/.runs/` carries transient IPC.",
+          "tokenCount": 103,
+          "sourceRange": {
+            "sessionId": "bench-om-5afa6864e8d5",
+            "firstEntryId": "58c2ab7a",
+            "lastEntryId": "6cbf58fa"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:18:00.02",
+          "content": "The memory project includes `.memory/` topic files, generated `INDEX.md`, and descriptive `JOURNEY.md`; journeys/maps are injected during compaction and durable files do not roll back under `/tree`. Consolidator uses scoped read/write/edit/ls/grep tools, updates topics and journey, and orchestrator re-renders INDEX and tombstones the handed batch intersected with still-active observations.",
+          "tokenCount": 98,
+          "sourceRange": {
+            "sessionId": "bench-om-5afa6864e8d5",
+            "firstEntryId": "58c2ab7a",
+            "lastEntryId": "6cbf58fa"
+          }
+        },
+        {
+          "timestamp": "2026-11-14T12:18:00.03",
+          "content": "Provided source excerpts include worker cost tracking via pi usage and cost-file IPC, session-wide `om.cost` totals, TUI gauges/status, compaction cutoff snapping and observer wait fast path, and tests covering ledger folding, timestamp IDs, compaction boundaries, scoped tools, and cost. No implementation was performed in this context packet.",
+          "tokenCount": 86,
+          "sourceRange": {
+            "sessionId": "bench-om-5afa6864e8d5",
+            "firstEntryId": "58c2ab7a",
+            "lastEntryId": "6cbf58fa"
+          }
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/session-scope-improved-om/trials/session-scope-improved-om-r2/sessions/2026-11-14T05-18-13-160Z_bench-om-5afa6864e8d5.jsonl",
+    "sessionId": "bench-om-5afa6864e8d5",
+    "userMessages": 13,
+    "assistantMessages": 39,
+    "toolCalls": 40,
+    "toolResults": 40,
+    "totalMessages": 93,
+    "tokens": {
+      "input": 152779,
+      "output": 6372,
+      "cacheRead": 2003200,
+      "cacheWrite": 0,
+      "total": 2162351
+    },
+    "cost": 0.038495900000000007,
+    "contextUsage": {
+      "tokens": 66706,
+      "contextWindow": 272000,
+      "percent": 24.524264705882352
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.006397900000000001,
+    "workerSessions": [
+      {
+        "file": "/home/ejo4358/.pi/agent/sessions/--tmp-om-improved-round3-session-scope-improved-om-worktrees-session-scope-improved-om-r2-.memory-bench-om-5afa6864e8d5--/2026-11-14T05-18-32-439Z_01a1d87e-35f6-7048-9194-449ab820bab4.jsonl",
+        "name": "om-observer-obs-20261114051832-35429-1",
+        "tokens": {
+          "input": 56301,
+          "output": 422,
+          "cacheRead": 55680,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.006397900000000001
+      }
+    ],
+    "workerTokens": {
+      "input": 56301,
+      "output": 422,
+      "cacheRead": 55680,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.006397900000000001,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

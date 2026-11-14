@@ -1,0 +1,98 @@
+{
+  "condition": "native",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-native-7845b4f60f0f",
+  "cwd": "/tmp/om-improved-round3/session-scope-native/worktrees/session-scope-native-shakedown",
+  "startedAtEpoch": 1794630461.0898638,
+  "elapsedSeconds": 268.0819738340015,
+  "activeElapsedSeconds": 268.0819746500001,
+  "phaseSeconds": {
+    "seed_1_seconds": 4.371197344999018,
+    "seed_2_seconds": 1.1931032669999695,
+    "seed_3_seconds": 1.1775261259990657,
+    "seed_4_seconds": 1.1437952209998912,
+    "seed_5_seconds": 1.5393092680005793,
+    "seed_6_seconds": 3.0220911110009183,
+    "seed_7_seconds": 1.08290726100131,
+    "seed_8_seconds": 1.222195988999374,
+    "seed_9_seconds": 1.2720043650006119,
+    "seed_10_seconds": 1.0650196859987773,
+    "seed_11_seconds": 1.1679264969989163,
+    "seed_12_seconds": 1.2169070550007746,
+    "compact_seconds": 15.01718449299915,
+    "implementation_seconds": 233.5695972270005
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "## Goal\nChange observational-memory durable storage from project-level `.memory/` to session-owned roots at `.memory/<sessionId>/`, with one-time parent-memory seeding for child sessions.\n\n## Constraints & Preferences\n- Use immutable session-header IDs\u2014not display names or session filenames\u2014as identity.\n- Find a fork\u2019s parent via its session header\u2019s `parentSession` path; read the parent session header\u2019s ID to locate its memory root.\n- Skip transient `.runs/` data when seeding.\n- If the parent header is unreadable or has no memory root, leave the child root uncreated until its first durable write.\n- Never overwrite or re-seed existing child memory on resume.\n- Route all durable-memory reads/writes, compaction map rendering, journey access, and worker IPC through the owning session\u2019s memory root.\n- Preserve short-term ledger `/tree` behavior; durable per-session files remain independent of ledger branches.\n- The supplied plans and code excerpts are context-only, not instructions to implement now. No tools, edits, or tests during preparation.\n\n## Progress\n### Done\n- [x] Received context packets 1\u20138 of 12, including implementation plan, README, source excerpts, and tests.\n\n### In Progress\n- [ ] Await remaining context packets and a separate explicit implementation prompt.\n\n### Blocked\n- No implementation prompt has been provided; preparation packets explicitly prohibit acting on the reference task.\n\n## Key Decisions\n- **Per-session durable root**: `.memory/<sessionId>/` isolates long-term memory by immutable session identity.\n- **Seed child once on first touch**: forked sessions inherit a snapshot of parent memory, excluding transient run data; existing child memory is authoritative.\n- **Ledger remains separate**: short-term observations and `/tree` rollback continue using the session ledger; durable files do not roll back with ledger branches.\n\n## Next Steps\n1. Continue receiving context packets if provided.\n2. Wait for the explicit implementation prompt after compaction.\n3. Then inspect the repository and implement the session-specific memory-root behavior, updating tests for seeding, identity resolution, and all affected access paths.\n\n## Critical Context\n- Relevant paths include `src/memory/paths.ts`, `src/memory/index-render.ts`, `src/hooks/compaction-hook.ts`, `src/hooks/consolidator-trigger.ts`, `src/spawn/launch.ts`, `src/spawn/runs.ts`, and `agent/consolidator/tools.ts`.\n- Existing code resolves memory and worker IPC from `cwd` via `memoryDir(cwd)` (`<cwd>/.memory`); consolidator tools receive `OM_MEMORY_DIR`.\n- Compaction reads `readJourney(ctx.cwd)` and `listTopics(ctx.cwd)`. Consolidation builds prompts from `listTopics(cwd)`/`readJourney(cwd)`, writes `INDEX.md`, and worker env points to the project memory root.\n- Tests currently assert project-level paths, e.g. `tests/consolidator.test.ts` expects `OM_MEMORY_DIR === \"/proj/.memory\"`.\n- The preparation packets contain reference code and requirements only; no changes have been made.",
+    "firstKeptEntryId": "b4ee3339",
+    "tokensBefore": 80425,
+    "estimatedTokensAfter": 28132,
+    "usage": {
+      "input": 54005,
+      "output": 786,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "reasoning": 145,
+      "totalTokens": 54791,
+      "cost": {
+        "input": 0.005400500000000001,
+        "output": 0.00039299999999999996,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0.005793500000000001,
+        "totalFromProvider": false
+      }
+    },
+    "details": {
+      "readFiles": [],
+      "modifiedFiles": []
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/session-scope-native/trials/session-scope-native-shakedown/sessions/2026-11-14T04-27-23-158Z_bench-native-7845b4f60f0f.jsonl",
+    "sessionId": "bench-native-7845b4f60f0f",
+    "userMessages": 13,
+    "assistantMessages": 41,
+    "toolCalls": 48,
+    "toolResults": 48,
+    "totalMessages": 103,
+    "tokens": {
+      "input": 199728,
+      "output": 10579,
+      "cacheRead": 1912064,
+      "cacheWrite": 0,
+      "total": 2122371
+    },
+    "cost": 0.044382939999999996,
+    "contextUsage": {
+      "tokens": 59916,
+      "contextWindow": 272000,
+      "percent": 22.027941176470588
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0,
+    "workerSessions": [],
+    "workerTokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.0,
+    "observationEntries": 0,
+    "costEntries": 0,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}

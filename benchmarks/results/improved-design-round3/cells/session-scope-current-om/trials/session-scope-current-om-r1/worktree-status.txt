@@ -1,0 +1,11 @@
+ M src/commands/status.ts
+ M src/hooks/compaction-hook.ts
+ M src/hooks/consolidator-trigger.ts
+ M src/hooks/observer-trigger.ts
+ M src/memory/paths.ts
+ M src/spawn/launch.ts
+ M src/spawn/runs.ts
+?? .memory/
+?? .pi/
+?? src/memory/session-root.ts
+?? tests/memory.session-root.test.ts

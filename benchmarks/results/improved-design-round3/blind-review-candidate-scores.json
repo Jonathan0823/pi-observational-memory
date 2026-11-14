@@ -1,0 +1,869 @@
+{
+  "interpretation": "Fact scores are behavior coverage; prompts restate gold facts and do not show memory-attributable recall.",
+  "candidates": [
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-2ae1de01",
+      "condition": "improved-om",
+      "trialId": "cost-ledger-improved-om-r3",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "4 files, 22/22 focused tests passed; typecheck passed",
+      "evidence": ""
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-2da992e6",
+      "condition": "improved-om",
+      "trialId": "cost-ledger-improved-om-r2",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "2 files, 7/7 focused tests passed; typecheck passed",
+      "evidence": ""
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-3aa3b049",
+      "condition": "current-om",
+      "trialId": "cost-ledger-current-om-r3",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "3 files, 17/17 focused tests passed; typecheck passed",
+      "evidence": ""
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-59b893e7",
+      "condition": "current-om",
+      "trialId": "cost-ledger-current-om-r1",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "Final filtered tests 5 passed, 12 skipped; typecheck passed; earlier full focused run had 2 failures",
+      "evidence": "Full focused suite failures not resolved by final filtered run."
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-848be20b",
+      "condition": "improved-om",
+      "trialId": "cost-ledger-improved-om-r1",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "3 files, 17/17 focused tests passed; typecheck passed",
+      "evidence": ""
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-87b67647",
+      "condition": "native",
+      "trialId": "cost-ledger-native-r3",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "none",
+      "finalChecks": "2 files, 11/11 focused tests passed; typecheck passed",
+      "evidence": ""
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-a51117fe",
+      "condition": "current-om",
+      "trialId": "cost-ledger-current-om-r2",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "Final cost tests 5/5 passed; typecheck passed; spawn smoke tests passed",
+      "evidence": ""
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-b31daf1d",
+      "condition": "native",
+      "trialId": "cost-ledger-native-r1",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "honored"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "none",
+      "finalChecks": "2 files, 11/11 focused tests passed; typecheck passed",
+      "evidence": "Cost is written to the observer result path, potentially replacing the observations payload."
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-b780052d",
+      "condition": "native",
+      "trialId": "cost-ledger-native-r2",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "actual Pi-reported usage cost",
+          "result": "honored"
+        },
+        {
+          "fact": "include unsuccessful/ephemeral worker usage",
+          "result": "honored"
+        },
+        {
+          "fact": "identify worker role/run",
+          "result": "honored"
+        },
+        {
+          "fact": "aggregate all branches",
+          "result": "missed"
+        },
+        {
+          "fact": "ignore invalid cost values",
+          "result": "honored"
+        },
+        {
+          "fact": "expose total in status/footer",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "none",
+      "finalChecks": "Typecheck passed; final filtered tests 5 passed, 12 skipped; earlier full focused run had 2 failures",
+      "evidence": "All-branch aggregation is missing; status/footer fold the active branch rather than all session entries. Full focused failures unresolved."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-28a98cf1",
+      "condition": "improved-om",
+      "trialId": "session-scope-improved-om-r1",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "honored"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "5 suites, 51 tests passed; typecheck passed",
+      "evidence": "Helper source confirms header ID and parent path; recursive copy skips .runs. Worker IPC targets absent child root and can create it before durable write."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-30be982e",
+      "condition": "native",
+      "trialId": "session-scope-native-r2",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "missed"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "missed"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "missed"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "3 suites, 31 tests passed; typecheck passed",
+      "evidence": "No parent seeding or .runs exclusion in diff; IPC is session-scoped but can create root."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-43a4d5a2",
+      "condition": "current-om",
+      "trialId": "session-scope-current-om-r3",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "honored"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "4 suites, 33 tests passed; typecheck passed",
+      "evidence": "session_start seeds through parent header ID and recursively skips .runs; worker IPC can create root before durable write."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-5f044e1a",
+      "condition": "improved-om",
+      "trialId": "session-scope-improved-om-r3",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "honored"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "2 suites, 24 tests passed; typecheck passed",
+      "evidence": "Helper source confirms parent-header lookup, one-time copy, recursive .runs exclusion; IPC can create root when seeding is deferred."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-872d9eb0",
+      "condition": "improved-om",
+      "trialId": "session-scope-improved-om-r2",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "honored"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "4 suites, 31 tests passed; typecheck passed",
+      "evidence": "Header-ID seeding and recursive .runs exclusion are present; IPC still targets root when parent unavailable."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-a0b0d008",
+      "condition": "current-om",
+      "trialId": "session-scope-current-om-r2",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "honored"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "4 suites, 28 tests passed; typecheck passed",
+      "evidence": "Header-based one-time seeding and .runs exclusion; generated IPC files are under session root, allowing creation."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-bd7d2856",
+      "condition": "native",
+      "trialId": "session-scope-native-r3",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "missed"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "missed"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "3 suites, 31 tests passed; typecheck passed",
+      "evidence": " .runs exclusion only at parent root; IPC helpers pass memory-root where session ID expected."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-e62d58f6",
+      "condition": "current-om",
+      "trialId": "session-scope-current-om-r1",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "honored"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "4 suites, 32 tests passed; typecheck passed",
+      "evidence": "Helper source confirms parent-header lookup and root .runs exclusion; worker IPC can create root before durable write."
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-fc71efed",
+      "condition": "native",
+      "trialId": "session-scope-native-r1",
+      "completion": "partial",
+      "factResults": [
+        {
+          "fact": "immutable session-header ID root",
+          "result": "honored"
+        },
+        {
+          "fact": "parent discovered by session path/header ID",
+          "result": "honored"
+        },
+        {
+          "fact": "child seeded once without resume overwrite",
+          "result": "honored"
+        },
+        {
+          "fact": ".runs excluded",
+          "result": "honored"
+        },
+        {
+          "fact": "defer root creation until durable write",
+          "result": "missed"
+        },
+        {
+          "fact": "durable memory and IPC paths session-scoped",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "4 suites, 37 tests passed; typecheck passed",
+      "evidence": "Child header supports parent discovery and one-time seed; IPC can create root when seeding deferred."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-004f7b04",
+      "condition": "improved-om",
+      "trialId": "worker-cwd-improved-om-r2",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "none",
+      "finalChecks": "2 files, 16 tests passed; typecheck passed",
+      "evidence": "Both trigger diffs pass runtime.memoryRoot cwd; root created before spawn; existing launch behavior preserved."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-1f3612b4",
+      "condition": "current-om",
+      "trialId": "worker-cwd-current-om-r1",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "2 files, 16 tests passed; typecheck passed",
+      "evidence": "One broad rg across src/tests before focused reads; launch behavior preserved."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-707fa6ba",
+      "condition": "improved-om",
+      "trialId": "worker-cwd-improved-om-r3",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "2 files, 16 tests passed; typecheck passed",
+      "evidence": "Broad repo searches, then another broad test search."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-711320c2",
+      "condition": "native",
+      "trialId": "worker-cwd-native-r1",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "2 files, 16 tests passed; typecheck passed",
+      "evidence": "Both triggers cwd/root creation verified; broad searches followed by test search."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-76a75ffc",
+      "condition": "native",
+      "trialId": "worker-cwd-native-r2",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "3 files, 17 tests passed; typecheck passed",
+      "evidence": "Broad searches; initial test failure corrected and rerun."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-98287e03",
+      "condition": "improved-om",
+      "trialId": "worker-cwd-improved-om-r1",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "2 files, 16 tests passed; typecheck passed",
+      "evidence": "One broad rg across src/tests before focused reads."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-ae85c45f",
+      "condition": "current-om",
+      "trialId": "worker-cwd-current-om-r2",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "one",
+      "finalChecks": "2 files, 16 tests passed; typecheck passed",
+      "evidence": "One broad rg across src/tests before focused reads."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-e7d1bc0d",
+      "condition": "native",
+      "trialId": "worker-cwd-native-r3",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "2 files, 16 tests passed; typecheck passed",
+      "evidence": "Broad searches across src/tests and tests."
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-fe40ddda",
+      "condition": "current-om",
+      "trialId": "worker-cwd-current-om-r3",
+      "completion": "complete",
+      "factResults": [
+        {
+          "fact": "both worker roles use runtime-resolved memory-root cwd",
+          "result": "honored"
+        },
+        {
+          "fact": "root exists before spawn",
+          "result": "honored"
+        },
+        {
+          "fact": "env/IPC/prompt/cancel/exit/result behavior preserved",
+          "result": "honored"
+        }
+      ],
+      "repeatedWork": "multiple",
+      "finalChecks": "2 files, 17 tests passed; typecheck passed",
+      "evidence": "Broad searches then additional test-script discovery."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+ M agent/index.ts
+ M src/commands/status.ts
+ M src/hooks/consolidator-trigger.ts
+ M src/hooks/observer-trigger.ts
+ M src/ledger/types.ts
+ M src/runtime.ts
+ M src/spawn/launch.ts
+ M src/spawn/runs.ts
+ M src/ui/status-controller.ts
+?? .pi/
+?? src/spawn/cost.ts
+?? tests/cost.test.ts

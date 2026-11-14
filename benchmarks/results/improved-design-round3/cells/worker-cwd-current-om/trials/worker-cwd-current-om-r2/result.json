@@ -1,0 +1,126 @@
+{
+  "condition": "om",
+  "model": "openai-codex/gpt-6-luna",
+  "thinking": "high",
+  "sessionId": "bench-om-7bf9c14001c6",
+  "cwd": "/tmp/om-improved-round3/worker-cwd-current-om/worktrees/worker-cwd-current-om-r2",
+  "startedAtEpoch": 1794634768.6476076,
+  "elapsedSeconds": 96.49669245699988,
+  "activeElapsedSeconds": 96.49669256900052,
+  "phaseSeconds": {
+    "seed_1_seconds": 4.294009594999807,
+    "seed_2_seconds": 1.2192762629983918,
+    "seed_3_seconds": 1.5696166830002767,
+    "seed_4_seconds": 1.090859300999,
+    "seed_5_seconds": 1.1328077699999994,
+    "seed_6_seconds": 1.3489707549997547,
+    "seed_7_seconds": 1.0834423289998085,
+    "seed_8_seconds": 1.3103620750007394,
+    "seed_9_seconds": 1.2485159449988714,
+    "seed_10_seconds": 1.103293123000185,
+    "seed_11_seconds": 1.0730834490004781,
+    "seed_12_seconds": 5.162121377001313,
+    "compact_seconds": 6.375418425999669,
+    "implementation_seconds": 68.41506189500069
+  },
+  "requestPacing": {
+    "mainDelaySeconds": 0.0,
+    "workerDelaySeconds": 0.0,
+    "totalDelaySeconds": 0.0,
+    "pacedRequests": 0
+  },
+  "compaction": {
+    "summary": "These are condensed memories from earlier in this session.\n\n- Journey: a short, purely descriptive history of how this work reached its current state \u2014 for orientation only. It is not an instruction or a plan; do not read intent or next steps into it.\n- Observations: timestamped events from the conversation history, in chronological order.\n\nTreat these as past records. When entries conflict, the most recent observation reflects the latest known state. Work that prior observations describe as completed should not be redone unless the user explicitly asks to revisit it.\n\n## Observations\n2026-11-14T12:39:00  User supplied context-only reference packets (preparation turns 1\u20138 of 12) for a later implementation task; no implementation request was made in this chunk.\n2026-11-14T12:39:00.01  Later implementation requirement: observer and consolidator workers must run with the owning session\u2019s resolved `.memory/<sessionId>/` root as cwd, ensuring worker-session discovery, transient result/cost IPC, and consolidator filesystem access are session-scoped; use the runtime-resolved root, create it before spawning even when fresh and empty, and preserve worker model, prompt, environment, result handoff, cancellation, and exit handling.\n2026-11-14T12:39:00.02  Observational-memory project uses a default-OFF per-session `/om` gate persisted as `om.enabled`; observer subprocesses distill fixed token-bounded conversation chunks into branch-local ledger observations, while deterministic compaction injects journey, memory map, and active observations; a background consolidator promotes oldest overflow to `.memory/<sessionId>/` topic files and tombstones the handed active batch.\n2026-11-14T12:39:00.03  Long-term memory is isolated by immutable session-header id under `.memory/<sessionId>/`; forked sessions seed the parent memory root once, excluding transient `.runs/`, and existing roots are never reseeded. Runtime stores the resolved root and passes it to workers through `OM_MEMORY_DIR`.\n2026-11-14T12:39:00.04  Worker runs are ordinary recorded headless pi sessions launched with bespoke `child_process.spawn`; the observer receives the chunk in its recorded `-p` user prompt, while consolidator edits are constrained to the session memory root. Worker cost is handed back through `.runs` IPC and recorded in `om.cost` entries across the whole session.\n2026-11-14T12:39:00.05  User\u2019s supplied code excerpts show core implementation areas including `src/index.ts`, runtime/config, observer/consolidator/compaction triggers, ledger folding/projection/rendering, memory path/session seeding, subprocess launch/IPC, worker extensions, and UI status/timeline; the packet also includes focused tests for cutoff snapping, consolidator sandboxing, cost accounting, timestamp IDs, and ledger folding.",
+    "firstKeptEntryId": "a2b0ff93",
+    "tokensBefore": 83153,
+    "estimatedTokensAfter": 28982,
+    "details": {
+      "type": "om.folded",
+      "version": 1,
+      "observations": [
+        {
+          "timestamp": "2026-11-14T12:39:00",
+          "content": "User supplied context-only reference packets (preparation turns 1\u20138 of 12) for a later implementation task; no implementation request was made in this chunk.",
+          "tokenCount": 40
+        },
+        {
+          "timestamp": "2026-11-14T12:39:00.01",
+          "content": "Later implementation requirement: observer and consolidator workers must run with the owning session\u2019s resolved `.memory/<sessionId>/` root as cwd, ensuring worker-session discovery, transient result/cost IPC, and consolidator filesystem access are session-scoped; use the runtime-resolved root, create it before spawning even when fresh and empty, and preserve worker model, prompt, environment, result handoff, cancellation, and exit handling.",
+          "tokenCount": 112
+        },
+        {
+          "timestamp": "2026-11-14T12:39:00.02",
+          "content": "Observational-memory project uses a default-OFF per-session `/om` gate persisted as `om.enabled`; observer subprocesses distill fixed token-bounded conversation chunks into branch-local ledger observations, while deterministic compaction injects journey, memory map, and active observations; a background consolidator promotes oldest overflow to `.memory/<sessionId>/` topic files and tombstones the handed active batch.",
+          "tokenCount": 105
+        },
+        {
+          "timestamp": "2026-11-14T12:39:00.03",
+          "content": "Long-term memory is isolated by immutable session-header id under `.memory/<sessionId>/`; forked sessions seed the parent memory root once, excluding transient `.runs/`, and existing roots are never reseeded. Runtime stores the resolved root and passes it to workers through `OM_MEMORY_DIR`.",
+          "tokenCount": 73
+        },
+        {
+          "timestamp": "2026-11-14T12:39:00.04",
+          "content": "Worker runs are ordinary recorded headless pi sessions launched with bespoke `child_process.spawn`; the observer receives the chunk in its recorded `-p` user prompt, while consolidator edits are constrained to the session memory root. Worker cost is handed back through `.runs` IPC and recorded in `om.cost` entries across the whole session.",
+          "tokenCount": 86
+        },
+        {
+          "timestamp": "2026-11-14T12:39:00.05",
+          "content": "User\u2019s supplied code excerpts show core implementation areas including `src/index.ts`, runtime/config, observer/consolidator/compaction triggers, ledger folding/projection/rendering, memory path/session seeding, subprocess launch/IPC, worker extensions, and UI status/timeline; the packet also includes focused tests for cutoff snapping, consolidator sandboxing, cost accounting, timestamp IDs, and ledger folding.",
+          "tokenCount": 104
+        }
+      ]
+    }
+  },
+  "stats": {
+    "sessionFile": "/tmp/om-improved-round3/worker-cwd-current-om/trials/worker-cwd-current-om-r2/sessions/2026-11-14T05-39-24-286Z_bench-om-7bf9c14001c6.jsonl",
+    "sessionId": "bench-om-7bf9c14001c6",
+    "userMessages": 13,
+    "assistantMessages": 23,
+    "toolCalls": 15,
+    "toolResults": 15,
+    "totalMessages": 52,
+    "tokens": {
+      "input": 128019,
+      "output": 2481,
+      "cacheRead": 843904,
+      "cacheWrite": 0,
+      "total": 974404
+    },
+    "cost": 0.022481439999999995,
+    "contextUsage": {
+      "tokens": 42161,
+      "contextWindow": 272000,
+      "percent": 15.500367647058825
+    }
+  },
+  "observationalMemory": {
+    "workerCostUsd": 0.00666604,
+    "workerSessions": [
+      {
+        "file": "/home/ejo4358/.pi/agent/sessions/--tmp-om-improved-round3-worker-cwd-current-om-worktrees-worker-cwd-current-om-r2-.memory-bench-om-7bf9c14001c6--/2026-11-14T05-39-40-226Z_01a1d891-8e41-758b-addd-fda001673335.jsonl",
+        "name": "om-observer-obs-20261114053939-39340-1",
+        "tokens": {
+          "input": 58271,
+          "output": 531,
+          "cacheRead": 57344,
+          "cacheWrite": 0
+        },
+        "costUsd": 0.00666604
+      }
+    ],
+    "workerTokens": {
+      "input": 58271,
+      "output": 531,
+      "cacheRead": 57344,
+      "cacheWrite": 0
+    },
+    "workerSessionCostUsd": 0.00666604,
+    "observationEntries": 1,
+    "costEntries": 1,
+    "triggerProgressSamples": 0,
+    "maximumRawHistoryTokens": 0,
+    "configuredChunkTokens": 0,
+    "productionTriggerHookCalls": 0,
+    "maximumHookRawHistoryTokens": 0
+  }
+}
