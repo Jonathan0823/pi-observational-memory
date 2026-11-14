@@ -19,7 +19,7 @@ These are descriptive partial samples, not a completed three-condition compariso
 | Current OM | 3 | 277.4s | $0.03956 | $0 | $0.03956 | 2,106,232 | 0 |
 | Improved OM | 2 | 331.7s | $0.04773 | $0.00726 | $0.05499 | 2,428,837 | 1 per run |
 
-Current OM produced no observer entries in these trials, so its measurements do not represent an exercised OM condition and should not be interpreted as an OM cost or outcome comparison. The runner used commit `0b52f5e`, which predates the production stdin fix in `856ff90`; the worker kickoff prompt therefore still traveled in argv, despite the 60k-token chunks. This likely explains the missing observer and violates the benchmark prerequisite. The runner now defaults current OM to `856ff90`, which differs from `0b52f5e` only by the worker-launch fix. Improved OM did start one observer in each completed measured trial.
+Current OM produced no observer entries in these trials, so its measurements do not represent an exercised OM condition and should not be interpreted as an OM cost or outcome comparison. The runner used commit `0b52f5e`, which predates the production stdin fix in `856ff90`; the worker kickoff prompt therefore still traveled in argv, despite the 60k-token chunks. This likely explains the missing observer and violates the benchmark prerequisite. The runner now defaults current OM to `856ff90`, which differs from `0b52f5e` only by the worker-launch fix. Improved OM did start one observer in each completed measured trial. A separate patched-current-OM diagnostic shakedown subsequently succeeded: it recorded one observer and one worker-cost entry ($0.00745) at the original 60k chunk threshold. This validates the production stdin fix in the runner, but the diagnostic is excluded from the measured round. Its manifest and logs are under [`diagnostics/`](diagnostics/).
 
 Individual measured values:
 
@@ -42,6 +42,6 @@ Test evidence is incomplete and uneven across candidates. For example, improved-
 
 ## Recommendation and next steps
 
-This checkpoint does **not** answer whether improved OM is worth its complexity or worker cost. Do not close issue #7 or issue #2. Before further measured runs, validate the patched current-OM source (`856ff90`) in a diagnostic shakedown. The runner now installs dependencies before each trial and can execute one task-condition cell at a time, keeping runs below the execution environment's one-hour limit. Recall/repeated-work attribution remains limited because required facts are repeated in the final implementation prompts.
+This checkpoint does **not** answer whether improved OM is worth its complexity or worker cost. Do not close issue #7 or issue #2. The patched current-OM shakedown passed. The runner now installs dependencies before each trial and can execute one task-condition cell at a time, keeping runs below the execution environment's one-hour limit. The original partial round remains non-comparable; proceed with a fresh round if completing issue #7. Recall/repeated-work attribution remains limited because required facts are repeated in the final implementation prompts.
 
 Protocol and fixed settings: [`evaluation-protocol.md`](evaluation-protocol.md), [`manifest.json`](manifest.json). Baseline round-one task hashes and snapshots remain recorded in [`../measured-round1/manifest.json`](../measured-round1/manifest.json).
