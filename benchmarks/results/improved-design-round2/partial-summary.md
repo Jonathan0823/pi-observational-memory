@@ -42,6 +42,6 @@ Test evidence is incomplete and uneven across candidates. For example, improved-
 
 ## Recommendation and next steps
 
-This checkpoint does **not** answer whether improved OM is worth its complexity or worker cost. Do not close issue #7 or issue #2. Before any further paid run, fix the runner to prepare dependencies consistently and diagnose why current OM emitted no observations; then decide whether to complete the remaining 24 trials. Recall/repeated-work evaluation needs probes whose required facts are not repeated verbatim in the final implementation prompt.
+This checkpoint does **not** answer whether improved OM is worth its complexity or worker cost. Do not close issue #7 or issue #2. Before any further paid run, diagnose why current OM emitted no observations. The runner has since been updated to install dependencies before each trial and to run/clean up one task-condition cell at a time; validate those changes in a diagnostic shakedown before deciding whether to complete the remaining cells. Recall/repeated-work evaluation needs probes whose required facts are not repeated verbatim in the final implementation prompt.
 
 Protocol and fixed settings: [`evaluation-protocol.md`](evaluation-protocol.md), [`manifest.json`](manifest.json). Baseline round-one task hashes and snapshots remain recorded in [`../measured-round1/manifest.json`](../measured-round1/manifest.json).
