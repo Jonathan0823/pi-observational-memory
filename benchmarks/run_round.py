@@ -20,7 +20,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 BENCHMARKS = ROOT / "benchmarks"
 ROUND1_MANIFEST = BENCHMARKS / "results" / "measured-round1" / "manifest.json"
-DEFAULT_CURRENT_OM_COMMIT = "0b52f5eddd1b9188df5820f1560a4628d6f4bd83"
+DEFAULT_CURRENT_OM_COMMIT = "856ff90"
 CONDITIONS = ("native", "current-om", "improved-om")
 
 
