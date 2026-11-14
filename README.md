@@ -38,10 +38,9 @@ consolidator draining the oldest observations into durable per-session memory fi
   cut a fixed-token slice and fire an observer subprocess. Observers are embarrassingly
   parallel pure mappers (capped by `observerConcurrency`); each commits its own
   `coversUpToId` watermark, so out-of-order completion is fine.
-- **Observation** = `{ timestamp, content, tokenCount, sourceRange? }`. When available,
-  `sourceRange` identifies the immutable source session and first/last source-entry IDs in the
-  observer chunk; older observations without it remain readable. The orchestrator re-derives a
-  unique, second-resolution id at commit (the observer only emits minute resolution).
+- **Observation** = `{ timestamp, content, tokenCount }`. The precise event-`timestamp`
+  doubles as the id; the orchestrator re-derives a unique, second-resolution id at commit
+  (the observer only emits minute resolution).
 - **Compaction** (`agent_end` over `compactAtContextTokens`, when idle): waits for in-flight
   observers, then renders the active buffer plus a **memory map** (rendered live from
   `.memory/<session>/` topic front-matter) and a **journey** section (`.memory/<session>/JOURNEY.md`, read
@@ -58,9 +57,9 @@ consolidator draining the oldest observations into durable per-session memory fi
   which already travels with the fork). The orchestrator owns `INDEX.md` and re-renders it from
   topic front-matter after each run; the consolidator touches `<topic>.md` files plus
   `JOURNEY.md`, via its own `read`/`write`/`edit`/`ls`/`grep` tools scoped to the session dir.
-- **Journey** (`.memory/<session>/JOURNEY.md`): a session-scoped, purely **descriptive** prose
-  history of how this session's project work got to its current state, maintained by the consolidator
-  and pushed into every compaction block for **orientation** (not recall, not instructions). It is
+- **Journey** (`.memory/<session>/JOURNEY.md`): a single, whole-project, purely **descriptive** prose
+  history of how the work got to its current state, maintained by the consolidator and pushed
+  into every compaction block for **orientation** (not recall, not instructions). It is
   append-mostly: each consolidation adds a short dated segment and compresses the oldest
   segments only once the file exceeds `journeyTargetTokens`, so recent history stays detailed
   and the section stays bounded. Like the topic files it does **not** roll back under `/tree`.
@@ -69,11 +68,6 @@ Each worker is an **ordinary recorded pi session** in the global store
 (`~/.pi/agent/sessions`, under the project path) — open it in the session browser to see the
 exact input chunk, tool calls, and output. Transient handoff files live in
 `<project>/.memory/<sessionId>/.runs/`.
-
-- **Source recall** (`recall_source`): on demand, read a bounded page from an exact source range
-  stored beside a topic fact. It is read-only, restricted to the current session or its parent
-  lineage, and supports continuation cursors; unavailable source transcripts do not invalidate
-  durable session memory.
 
 ### Cost tracking
 

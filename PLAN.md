@@ -341,10 +341,8 @@ Goal: bound the buffer and gain durable, navigable topic files scoped to one ses
 - `<project>/.memory/<sessionId>/` with `INDEX.md`, `<topic>.md`, and `.runs/<runId>.result.json` / `.cost.json` worker IPC.
 - **Atomic writes**: temp file + `rename` over target so the master never reads a half-written
   file. (Consolidator edits files directly in the subprocess; same atomic helper there.)
-- Topic files remain the ordinary memory interface (`ls`/`read`/`grep`). The master also exposes
-  a read-only `recall_source` operation that accepts only exact source ranges stored in topic
-  files, scoped to the current session's lineage and bounded/paginated. Files are **not** rolled
-  back by `/tree`.
+- Filesystem **is** the recall interface — master uses normal `ls`/`read`/`grep`; no `recall`
+  tool. Files are **not** rolled back by `/tree` (design: long-term tracks the repo).
 
 ### B2. Consolidator trigger (`hooks/consolidator-trigger.ts`)
 - Clock: folded **active** observation pool tokens `>= consolidateAtPoolTokens` (200% of
@@ -370,8 +368,7 @@ Goal: bound the buffer and gain durable, navigable topic files scoped to one ses
 - Prompt: create/split/merge topic files; write clean current-state prose; remove superseded
   facts (no tombstone cruft); maintain front-matter (`id, title, summary, updated`). Routing
   aggressiveness is a tunable prompt knob (start conservative: prefer fewer, larger topics).
-- Consolidates observation text and its exact source-range metadata only; it does not read source
-  transcripts. Source inspection is a separate, bounded `recall_source` operation.
+- Works from **observation text only** in v1 (decision 8 — no drill-to-source).
 
 ### B4. Injection map (`src/memory/index-render.ts`, extend `ledger/render.ts`)
 - Compaction block section 1 = **memory map**: deterministically render `INDEX` from each
