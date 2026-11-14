@@ -1,0 +1,167 @@
+{
+  "note": "Condition map was kept separate from reviewers until all three reviews completed.",
+  "candidates": [
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-2ae1de01",
+      "trialId": "cost-ledger-improved-om-r3",
+      "condition": "improved-om"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-2da992e6",
+      "trialId": "cost-ledger-improved-om-r2",
+      "condition": "improved-om"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-3aa3b049",
+      "trialId": "cost-ledger-current-om-r3",
+      "condition": "current-om"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-59b893e7",
+      "trialId": "cost-ledger-current-om-r1",
+      "condition": "current-om"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-848be20b",
+      "trialId": "cost-ledger-improved-om-r1",
+      "condition": "improved-om"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-87b67647",
+      "trialId": "cost-ledger-native-r3",
+      "condition": "native"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-a51117fe",
+      "trialId": "cost-ledger-current-om-r2",
+      "condition": "current-om"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-b31daf1d",
+      "trialId": "cost-ledger-native-r1",
+      "condition": "native"
+    },
+    {
+      "task": "cost-ledger",
+      "anonymousCandidate": "candidate-b780052d",
+      "trialId": "cost-ledger-native-r2",
+      "condition": "native"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-28a98cf1",
+      "trialId": "session-scope-improved-om-r1",
+      "condition": "improved-om"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-30be982e",
+      "trialId": "session-scope-native-r2",
+      "condition": "native"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-43a4d5a2",
+      "trialId": "session-scope-current-om-r3",
+      "condition": "current-om"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-5f044e1a",
+      "trialId": "session-scope-improved-om-r3",
+      "condition": "improved-om"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-872d9eb0",
+      "trialId": "session-scope-improved-om-r2",
+      "condition": "improved-om"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-a0b0d008",
+      "trialId": "session-scope-current-om-r2",
+      "condition": "current-om"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-bd7d2856",
+      "trialId": "session-scope-native-r3",
+      "condition": "native"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-e62d58f6",
+      "trialId": "session-scope-current-om-r1",
+      "condition": "current-om"
+    },
+    {
+      "task": "session-scope",
+      "anonymousCandidate": "candidate-fc71efed",
+      "trialId": "session-scope-native-r1",
+      "condition": "native"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-004f7b04",
+      "trialId": "worker-cwd-improved-om-r2",
+      "condition": "improved-om"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-1f3612b4",
+      "trialId": "worker-cwd-current-om-r1",
+      "condition": "current-om"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-707fa6ba",
+      "trialId": "worker-cwd-improved-om-r3",
+      "condition": "improved-om"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-711320c2",
+      "trialId": "worker-cwd-native-r1",
+      "condition": "native"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-76a75ffc",
+      "trialId": "worker-cwd-native-r2",
+      "condition": "native"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-98287e03",
+      "trialId": "worker-cwd-improved-om-r1",
+      "condition": "improved-om"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-ae85c45f",
+      "trialId": "worker-cwd-current-om-r2",
+      "condition": "current-om"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-e7d1bc0d",
+      "trialId": "worker-cwd-native-r3",
+      "condition": "native"
+    },
+    {
+      "task": "worker-cwd",
+      "anonymousCandidate": "candidate-fe40ddda",
+      "trialId": "worker-cwd-current-om-r3",
+      "condition": "current-om"
+    }
+  ]
+}
