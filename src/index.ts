@@ -19,6 +19,7 @@ import { registerConsolidatorTrigger } from "./hooks/consolidator-trigger.js";
 import { registerObserverTrigger } from "./hooks/observer-trigger.js";
 import { OM_ENABLED, type Entry } from "./ledger/index.js";
 import { ensureSessionMemory } from "./memory/session.js";
+import { registerSourceRecallTool } from "./memory/recall-tool.js";
 import { Runtime } from "./runtime.js";
 
 function readGateFromLedger(branch: Entry[]): boolean {
@@ -91,4 +92,5 @@ export default function observationalMemory(pi: ExtensionAPI): void {
 	registerStatusCommand(pi, runtime);
 	registerCompactCommand(pi, runtime);
 	registerConsolidateCommand(pi, runtime);
+	registerSourceRecallTool(pi, runtime);
 }
