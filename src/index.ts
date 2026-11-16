@@ -70,12 +70,14 @@ export default function observationalMemory(pi: ExtensionAPI): void {
 
 	pi.registerCommand("om", {
 		description: "Toggle observational memory for this session (/om on, /om off)",
-		handler: async (args: string, ctx: any) => {
+		handler: (args: string, ctx: any) => {
 			const arg = (args ?? "").trim().toLowerCase();
-			const next = arg === "on" ? true : arg === "off" ? false : !runtime.enabled;
+			let next = !runtime.enabled;
+			if (arg === "on") next = true;
+			else if (arg === "off") next = false;
 			if (next === runtime.enabled) {
 				if (ctx.hasUI) ctx.ui.notify(`om already ${next ? "on" : "off"}`, "info");
-				return;
+				return Promise.resolve();
 			}
 			runtime.enabled = next;
 			pi.appendEntry(OM_ENABLED, { enabled: next });
@@ -89,6 +91,7 @@ export default function observationalMemory(pi: ExtensionAPI): void {
 				runtime.status.detach();
 			}
 			if (ctx.hasUI) ctx.ui.notify(`om ${next ? "enabled" : "disabled"}`, "info");
+			return Promise.resolve();
 		},
 	});
 
