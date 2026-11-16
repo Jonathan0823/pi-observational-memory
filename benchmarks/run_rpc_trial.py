@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 
+OM_COST_ENTRY_TYPE = "om.cost"
+
+
 class PiRpc:
     def __init__(self, command: list[str], cwd: Path, event_log: Path, env: dict[str, str]):
         self.stderr_log = (event_log.parent / "pi-stderr.log").open("w", encoding="utf-8")
@@ -153,27 +156,80 @@ def resolve_pi_cli(override: Path | None) -> Path:
     return cli
 
 
+def _read_pacing_file(path: Path) -> tuple[int, int, int]:
+    main_delay_ms = worker_delay_ms = request_count = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        delay = int(record.get("delayMs", 0) or 0)
+        request_count += 1
+        if record.get("role") == "main":
+            main_delay_ms += delay
+        else:
+            worker_delay_ms += delay
+    return main_delay_ms, worker_delay_ms, request_count
+
+
 def read_pacing_metrics(log_dir: Path) -> dict[str, float | int]:
     main_delay_ms = worker_delay_ms = request_count = 0
-    if log_dir.is_dir():
-        for path in log_dir.glob("request-pacing-*.jsonl"):
-            for line in path.read_text(encoding="utf-8").splitlines():
-                try:
-                    record = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                delay = int(record.get("delayMs", 0) or 0)
-                request_count += 1
-                if record.get("role") == "main":
-                    main_delay_ms += delay
-                else:
-                    worker_delay_ms += delay
+    paths = log_dir.glob("request-pacing-*.jsonl") if log_dir.is_dir() else ()
+    for path in paths:
+        main, worker, count = _read_pacing_file(path)
+        main_delay_ms += main
+        worker_delay_ms += worker
+        request_count += count
     return {
         "mainDelaySeconds": main_delay_ms / 1000,
         "workerDelaySeconds": worker_delay_ms / 1000,
         "totalDelaySeconds": (main_delay_ms + worker_delay_ms) / 1000,
         "pacedRequests": request_count,
     }
+
+
+def _add_worker_usage(usage: dict[str, Any], totals: dict[str, int]) -> tuple[float, bool]:
+    for key in totals:
+        value = usage.get(key, 0)
+        if isinstance(value, (int, float)) and value >= 0:
+            totals[key] += int(value)
+    amount = usage.get("cost", {}).get("total")
+    if isinstance(amount, (int, float)) and amount >= 0:
+        return float(amount), True
+    return 0.0, False
+
+
+def _read_worker_session_entries(stream: Any) -> tuple[str, dict[str, int], float, bool]:
+    name = ""
+    usage_totals = {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+    session_cost = 0.0
+    session_cost_reported = False
+    for line in stream:
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if entry.get("type") == "session_info":
+            name = str(entry.get("name", ""))
+        message = entry.get("message", {})
+        if entry.get("type") != "message" or message.get("role") != "assistant":
+            continue
+        amount, reported = _add_worker_usage(message.get("usage", {}), usage_totals)
+        session_cost += amount
+        session_cost_reported = session_cost_reported or reported
+    return name, usage_totals, session_cost, session_cost_reported
+
+
+def _read_worker_session(path: Path, expected_cwd: str) -> dict[str, Any] | None:
+    with path.open(encoding="utf-8") as stream:
+        header = json.loads(stream.readline())
+        if header.get("type") != "session" or header.get("cwd") != expected_cwd:
+            return None
+        name, usage_totals, session_cost, session_cost_reported = _read_worker_session_entries(stream)
+        return {
+            "file": str(path), "name": name, "tokens": usage_totals,
+            "costUsd": session_cost, "costReported": session_cost_reported,
+        }
 
 
 def collect_worker_stats(cwd: Path, session_id: str) -> dict[str, Any]:
@@ -189,40 +245,16 @@ def collect_worker_stats(cwd: Path, session_id: str) -> dict[str, Any]:
 
     for path in session_dir.rglob("*.jsonl"):
         try:
-            with path.open(encoding="utf-8") as stream:
-                header = json.loads(stream.readline())
-                if header.get("type") != "session" or header.get("cwd") != expected_cwd:
-                    continue
-                name = ""
-                usage_totals = {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
-                session_cost = 0.0
-                session_cost_reported = False
-                for line in stream:
-                    try:
-                        entry = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    if entry.get("type") == "session_info":
-                        name = str(entry.get("name", ""))
-                    message = entry.get("message", {})
-                    if entry.get("type") != "message" or message.get("role") != "assistant":
-                        continue
-                    usage = message.get("usage", {})
-                    for key in usage_totals:
-                        value = usage.get(key, 0)
-                        if isinstance(value, (int, float)) and value >= 0:
-                            usage_totals[key] += int(value)
-                    amount = usage.get("cost", {}).get("total")
-                    if isinstance(amount, (int, float)) and amount >= 0:
-                        session_cost += float(amount)
-                        session_cost_reported = True
-                sessions.append({"file": str(path), "name": name, "tokens": usage_totals, "costUsd": session_cost, "costReported": session_cost_reported})
-                for key, value in usage_totals.items():
-                    totals[key] += value
-                cost += session_cost
-                cost_reported = cost_reported or session_cost_reported
+            session = _read_worker_session(path, expected_cwd)
         except (OSError, ValueError, TypeError):
             continue
+        if session is None:
+            continue
+        sessions.append(session)
+        for key, value in session["tokens"].items():
+            totals[key] += value
+        cost += session["costUsd"]
+        cost_reported = cost_reported or session["costReported"]
     return {"sessions": sessions, "tokens": totals, "costUsd": cost, "costReported": cost_reported}
 
 
@@ -365,6 +397,18 @@ def is_session_topic_path(path_value: Any, cwd: Path, session_id: str) -> bool:
         return False
 
 
+def _is_valid_worker_cost_entry(entry: dict[str, Any]) -> bool:
+    if entry.get("customType") != OM_COST_ENTRY_TYPE:
+        return False
+    cost = entry.get("data", {}).get("costUsd")
+    return (
+        isinstance(cost, (int, float))
+        and not isinstance(cost, bool)
+        and math.isfinite(cost)
+        and cost >= 0
+    )
+
+
 def trial_usage(
     rpc: PiRpc, cwd: Path, session_id: str, condition: str, require_worker_report: bool = True
 ) -> dict[str, Any]:
@@ -378,11 +422,7 @@ def trial_usage(
     entries = entries_response.get("data", {}).get("entries", [])
     worker_cost_entries = [
         entry for entry in entries
-        if entry.get("customType") == "om.cost"
-        and isinstance(entry.get("data", {}).get("costUsd"), (int, float))
-        and not isinstance(entry.get("data", {}).get("costUsd"), bool)
-        and math.isfinite(entry.get("data", {}).get("costUsd"))
-        and entry.get("data", {}).get("costUsd") >= 0
+        if _is_valid_worker_cost_entry(entry)
     ]
     worker_ledger_cost = sum(
         float(entry.get("data", {}).get("costUsd", 0) or 0)
@@ -404,6 +444,29 @@ def trial_usage(
     }
 
 
+def _track_topic_read_event(
+    event: dict[str, Any], active: dict[str, dict[str, Any]], completed: list[dict[str, Any]],
+    cwd: Path, session_id: str,
+) -> None:
+    call_id = event.get("toolCallId")
+    if event.get("type") == "tool_execution_start" and event.get("toolName") == "read":
+        args = event.get("args", {})
+        path_value = args.get("path") if isinstance(args, dict) else None
+        if isinstance(call_id, str) and is_session_topic_path(path_value, cwd, session_id):
+            active[call_id] = {"toolCallId": call_id, "path": str(path_value)}
+        return
+    if event.get("type") != "tool_execution_end" or not isinstance(call_id, str) or call_id not in active:
+        return
+    is_error = event.get("isError")
+    if is_error is True:
+        outcome = "failed"
+    elif is_error is False:
+        outcome = "succeeded"
+    else:
+        outcome = "unverified"
+    completed.append({**active.pop(call_id), "isError": is_error if isinstance(is_error, bool) else None, "outcome": outcome})
+
+
 def collect_topic_reads(event_log: Path, cwd: Path, session_id: str) -> list[dict[str, Any]]:
     active: dict[str, dict[str, Any]] = {}
     completed: list[dict[str, Any]] = []
@@ -414,16 +477,7 @@ def collect_topic_reads(event_log: Path, cwd: Path, session_id: str) -> list[dic
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
-        call_id = event.get("toolCallId")
-        if event.get("type") == "tool_execution_start" and event.get("toolName") == "read":
-            args = event.get("args", {})
-            path_value = args.get("path") if isinstance(args, dict) else None
-            if isinstance(call_id, str) and is_session_topic_path(path_value, cwd, session_id):
-                active[call_id] = {"toolCallId": call_id, "path": str(path_value)}
-        elif event.get("type") == "tool_execution_end" and isinstance(call_id, str) and call_id in active:
-            is_error = event.get("isError")
-            outcome = "failed" if is_error is True else "succeeded" if is_error is False else "unverified"
-            completed.append({**active.pop(call_id), "isError": is_error if isinstance(is_error, bool) else None, "outcome": outcome})
+        _track_topic_read_event(event, active, completed, cwd, session_id)
     completed.extend({**record, "isError": None, "outcome": "incomplete", "incomplete": True} for record in active.values())
     return completed
 
@@ -440,59 +494,7 @@ def read_prompts(args: argparse.Namespace) -> list[str]:
     return prompts
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--condition", choices=("native", "om"), required=True)
-    parser.add_argument("--lookup-policy", choices=("unchanged", "guided", "mandatory"), default="unchanged")
-    parser.add_argument("--cwd", type=Path, required=True, help="Isolated task worktree")
-    parser.add_argument("--run-dir", type=Path, required=True, help="Directory for session and trial artifacts")
-    parser.add_argument("--task-file", type=Path, required=True, help="Final implementation prompt")
-    parser.add_argument("--seed", action="append", help="Planning/context prompt; can be repeated")
-    parser.add_argument("--seed-file", type=Path, help="JSON array of planning/context prompts")
-    parser.add_argument("--model", default="openai-codex/gpt-6-luna")
-    parser.add_argument("--worker-model", default=None, help="Defaults to --model")
-    parser.add_argument("--thinking", default="high", choices=("off", "minimal", "low", "medium", "high", "xhigh"))
-    parser.add_argument("--observer-thinking", default="low", choices=("off", "minimal", "low", "medium", "high", "xhigh"))
-    parser.add_argument("--consolidator-thinking", default="medium", choices=("off", "minimal", "low", "medium", "high", "xhigh"))
-    parser.add_argument("--session-id", default=None)
-    parser.add_argument("--extension", type=Path, default=Path(__file__).parent / "extensions" / "observational-memory.ts")
-    parser.add_argument("--pacer-extension", type=Path, default=Path(__file__).parent / "extensions" / "request-pacer.ts")
-    parser.add_argument("--pi-cli", type=Path, help="Pi CLI entrypoint; defaults to the managed Pi installation")
-    parser.add_argument("--request-interval-seconds", type=float, default=0)
-    parser.add_argument("--memory-diagnostics", action="store_true", help="Record OM trigger/token diagnostics (adds benchmark-only ledger entries)")
-    parser.add_argument("--max-cost-usd", type=float, default=None, help="Stop before the next phase once reported trial spend reaches this limit")
-    parser.add_argument("--timeout", type=int, default=1800, help="Per-phase timeout in seconds")
-    parser.add_argument(
-        "--quota-pause-seconds", type=float, default=0,
-        help="Wait after compaction to let the provider's per-minute quota window reset",
-    )
-    args = parser.parse_args()
-    if args.max_cost_usd is not None and (not math.isfinite(args.max_cost_usd) or args.max_cost_usd <= 0):
-        parser.error("--max-cost-usd must be greater than zero")
-    if args.condition == "native" and args.lookup_policy != "unchanged":
-        parser.error("--lookup-policy applies only to the OM condition")
-
-    cwd = args.cwd.resolve()
-    run_dir = args.run_dir.resolve()
-    if not cwd.is_dir():
-        parser.error(f"worktree does not exist: {cwd}")
-    if not args.task_file.is_file():
-        parser.error(f"task prompt does not exist: {args.task_file}")
-    run_dir.mkdir(parents=True, exist_ok=True)
-    session_dir = run_dir / "sessions"
-    session_dir.mkdir(parents=True, exist_ok=True)
-    session_id = args.session_id or f"bench-{args.condition}-{uuid.uuid4().hex[:12]}"
-    task_prompt = args.task_file.read_text(encoding="utf-8")
-    seeds = read_prompts(args)
-
-    configure_worker_models(
-        cwd,
-        args.worker_model or args.model,
-        args.observer_thinking,
-        args.consolidator_thinking,
-        memory_diagnostics=args.memory_diagnostics and args.condition == "om",
-    )
-    pacing_dir = run_dir / "request-pacing"
+def build_rpc_command(args: argparse.Namespace, session_id: str, session_dir: Path, pacing_dir: Path) -> tuple[list[str], dict[str, str]]:
     pacer_extension = args.pacer_extension.resolve()
     rpc_args = [
         "--mode", "rpc", "--no-extensions", "--no-skills",
@@ -520,127 +522,215 @@ def main() -> int:
         command = ["pi", *rpc_args]
     if args.condition == "om":
         command.extend(["-e", str(args.extension.resolve())])
+    return command, env
 
-    rpc = PiRpc(command, cwd, run_dir / "rpc-events.jsonl", env)
-    phase_times: dict[str, float] = {}
-    phase_costs: dict[str, dict[str, Any]] = {}
-    latest_usage: dict[str, Any] | None = None
-    started = time.monotonic()
 
+def _run_trial_phases(
+    args: argparse.Namespace, rpc: PiRpc, cwd: Path, session_id: str,
+    task_prompt: str, seeds: list[str], phase_times: dict[str, float],
+    phase_costs: dict[str, dict[str, Any]], usage_state: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     def check_budget(phase: str, require_worker_report: bool = False) -> None:
-        nonlocal latest_usage
         if args.max_cost_usd is None:
             return
         latest_usage = trial_usage(rpc, cwd, session_id, args.condition, require_worker_report=require_worker_report)
+        usage_state["latest"] = latest_usage
         phase_costs[phase] = latest_usage
         if latest_usage["totalCostUsd"] >= args.max_cost_usd:
             raise RuntimeError(
                 f"Spend limit reached after {phase}: ${latest_usage['totalCostUsd']:.6f} >= ${args.max_cost_usd:.6f}"
             )
 
+    for index, seed in enumerate(seeds, start=1):
+        _, elapsed = rpc.prompt(seed, f"seed-{index}", args.timeout)
+        phase_times[f"seed_{index}_seconds"] = elapsed
+        check_budget(f"seed_{index}")
+    if args.memory_diagnostics and args.condition == "om":
+        phase_times["memory_lifecycle_barrier_seconds"] = wait_for_consolidation(session_id, args.timeout)
+        check_budget("pre_compaction", require_worker_report=True)
+    compact_started = time.monotonic()
+    compact = rpc.request({"id": "benchmark-compact", "type": "compact"}, args.timeout)
+    phase_times["compact_seconds"] = time.monotonic() - compact_started
+    check_budget("compaction", require_worker_report=args.condition == "om")
+    if not compact.get("success"):
+        raise RuntimeError(f"Compaction did not complete: {compact.get('error', compact)}")
+    _run_post_compaction_phases(args, rpc, cwd, session_id, task_prompt, phase_times, check_budget)
+    stats_response = rpc.request({"id": "benchmark-stats", "type": "get_session_stats"}, args.timeout)
+    entries_response = rpc.request({"id": "benchmark-entries", "type": "get_entries"}, args.timeout)
+    return compact, stats_response, entries_response
+
+
+def _run_post_compaction_phases(
+    args: argparse.Namespace, rpc: PiRpc, cwd: Path, session_id: str,
+    task_prompt: str, phase_times: dict[str, float], check_budget: Callable[..., None],
+) -> None:
+    if args.quota_pause_seconds > 0:
+        pause_started = time.monotonic()
+        time.sleep(args.quota_pause_seconds)
+        phase_times["quota_pause_seconds"] = time.monotonic() - pause_started
+    probe_marker = None
+    if args.condition == "om" and args.lookup_policy == "mandatory":
+        probe_marker = cwd / ".pi" / "benchmark-probe-active"
+        probe_marker.write_text(session_id, encoding="utf-8")
     try:
-        for index, seed in enumerate(seeds, start=1):
-            _, elapsed = rpc.prompt(seed, f"seed-{index}", args.timeout)
-            phase_times[f"seed_{index}_seconds"] = elapsed
-            check_budget(f"seed_{index}")
+        _, phase_times["implementation_seconds"] = rpc.prompt(task_prompt, "implementation", args.timeout)
+    finally:
+        if probe_marker is not None:
+            probe_marker.unlink(missing_ok=True)
+    if args.memory_diagnostics and args.condition == "om":
+        phase_times["final_worker_idle_seconds"] = wait_for_memory_idle(session_id, args.timeout)
+    check_budget("implementation", require_worker_report=args.condition == "om")
 
-        if args.memory_diagnostics and args.condition == "om":
-            phase_times["memory_lifecycle_barrier_seconds"] = wait_for_consolidation(session_id, args.timeout)
-            check_budget("pre_compaction", require_worker_report=True)
 
-        compact_started = time.monotonic()
-        compact = rpc.request({"id": "benchmark-compact", "type": "compact"}, args.timeout)
-        phase_times["compact_seconds"] = time.monotonic() - compact_started
-        check_budget("compaction", require_worker_report=args.condition == "om")
-        if not compact.get("success"):
-            raise RuntimeError(f"Compaction did not complete: {compact.get('error', compact)}")
+def _build_trial_result(
+    args: argparse.Namespace, cwd: Path, run_dir: Path, session_id: str,
+    started: float, phase_times: dict[str, float], phase_costs: dict[str, dict[str, Any]],
+    latest_usage: dict[str, Any] | None, compact: dict[str, Any],
+    stats_response: dict[str, Any], entries_response: dict[str, Any], pacing_dir: Path,
+) -> dict[str, Any]:
+    entries = entries_response.get("data", {}).get("entries", [])
+    worker_cost = sum(
+        float(entry.get("data", {}).get("costUsd", 0) or 0)
+        for entry in entries if entry.get("customType") == OM_COST_ENTRY_TYPE
+    )
+    progress = [entry.get("data", {}) for entry in entries if entry.get("customType") == "om.benchmark.progress"]
+    trigger_hooks = [entry.get("data", {}) for entry in entries if entry.get("customType") == "om.benchmark.trigger-hook"]
+    pacing = read_pacing_metrics(pacing_dir)
+    empty_worker_stats = {
+        "sessions": [], "tokens": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}, "costUsd": 0.0,
+    }
+    worker_stats = collect_worker_stats(cwd, session_id) if args.condition == "om" else empty_worker_stats
+    memory_trace = (
+        collect_memory_trace(run_dir, session_id)
+        if args.memory_diagnostics and args.condition == "om"
+        else {"available": False, "reason": "disabled", "eventCounts": {}}
+    )
+    topic_reads = collect_topic_reads(run_dir / "rpc-events.jsonl", cwd, session_id)
+    return {
+        "condition": args.condition,
+        "lookupPolicy": args.lookup_policy,
+        "model": args.model,
+        "thinking": args.thinking,
+        "sessionId": session_id,
+        "cwd": str(cwd),
+        "startedAtEpoch": time.time() - (time.monotonic() - started),
+        "elapsedSeconds": time.monotonic() - started,
+        "activeElapsedSeconds": time.monotonic() - started - phase_times.get("quota_pause_seconds", 0) - pacing["mainDelaySeconds"],
+        "phaseSeconds": phase_times,
+        "requestPacing": pacing,
+        "compaction": compact.get("data", {}),
+        "stats": stats_response.get("data", {}),
+        "costAccounting": {"limitUsd": args.max_cost_usd, "phaseUsage": phase_costs, "finalUsage": latest_usage},
+        "memoryDiagnostics": {"lifecycleTrace": memory_trace, "topicReads": topic_reads},
+        "observationalMemory": {
+            "workerCostUsd": worker_cost,
+            "workerSessions": worker_stats["sessions"],
+            "workerTokens": worker_stats["tokens"],
+            "workerSessionCostUsd": worker_stats["costUsd"],
+            "observationEntries": sum(1 for entry in entries if entry.get("customType") == "om.observations.recorded"),
+            "costEntries": sum(1 for entry in entries if entry.get("customType") == OM_COST_ENTRY_TYPE),
+            "triggerProgressSamples": len(progress),
+            "maximumRawHistoryTokens": max((item.get("rawHistoryTokens", 0) for item in progress), default=0),
+            "configuredChunkTokens": max((item.get("chunkTokens", 0) for item in progress), default=0),
+            "productionTriggerHookCalls": len(trigger_hooks),
+            "maximumHookRawHistoryTokens": max((item.get("rawHistoryTokens", 0) for item in trigger_hooks), default=0),
+        },
+    }
 
-        if args.quota_pause_seconds > 0:
-            pause_started = time.monotonic()
-            time.sleep(args.quota_pause_seconds)
-            phase_times["quota_pause_seconds"] = time.monotonic() - pause_started
 
-        probe_marker: Path | None = None
-        if args.condition == "om" and args.lookup_policy == "mandatory":
-            probe_marker = cwd / ".pi" / "benchmark-probe-active"
-            probe_marker.write_text(session_id, encoding="utf-8")
-        try:
-            _, phase_times["implementation_seconds"] = rpc.prompt(task_prompt, "implementation", args.timeout)
-        finally:
-            if probe_marker is not None:
-                probe_marker.unlink(missing_ok=True)
-        if args.memory_diagnostics and args.condition == "om":
-            phase_times["final_worker_idle_seconds"] = wait_for_memory_idle(session_id, args.timeout)
-        check_budget("implementation", require_worker_report=args.condition == "om")
-        stats_response = rpc.request({"id": "benchmark-stats", "type": "get_session_stats"}, args.timeout)
-        entries_response = rpc.request({"id": "benchmark-entries", "type": "get_entries"}, args.timeout)
-        entries = entries_response.get("data", {}).get("entries", [])
-        worker_cost = sum(
-            float(entry.get("data", {}).get("costUsd", 0) or 0)
-            for entry in entries
-            if entry.get("customType") == "om.cost"
+def _write_failure_report(
+    args: argparse.Namespace, run_dir: Path, session_id: str, started: float,
+    phase_times: dict[str, float], phase_costs: dict[str, dict[str, Any]],
+    latest_usage: dict[str, Any] | None, pacing_dir: Path, error: Exception,
+) -> None:
+    pacing = read_pacing_metrics(pacing_dir)
+    failure = {
+        "condition": args.condition,
+        "lookupPolicy": args.lookup_policy,
+        "model": args.model,
+        "sessionId": session_id,
+        "elapsedSeconds": time.monotonic() - started,
+        "activeElapsedSeconds": time.monotonic() - started - phase_times.get("quota_pause_seconds", 0) - pacing["mainDelaySeconds"],
+        "phaseSeconds": phase_times,
+        "phaseCostUsage": phase_costs,
+        "latestCostUsage": latest_usage,
+        "requestPacing": pacing,
+        "error": str(error),
+    }
+    (run_dir / "failure.json").write_text(json.dumps(failure, indent=2) + "\n", encoding="utf-8")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--condition", choices=("native", "om"), required=True)
+    parser.add_argument("--lookup-policy", choices=("unchanged", "guided", "mandatory"), default="unchanged")
+    parser.add_argument("--cwd", type=Path, required=True, help="Isolated task worktree")
+    parser.add_argument("--run-dir", type=Path, required=True, help="Directory for session and trial artifacts")
+    parser.add_argument("--task-file", type=Path, required=True, help="Final implementation prompt")
+    parser.add_argument("--seed", action="append", help="Planning/context prompt; can be repeated")
+    parser.add_argument("--seed-file", type=Path, help="JSON array of planning/context prompts")
+    parser.add_argument("--model", default="openai-codex/gpt-6-luna")
+    parser.add_argument("--worker-model", default=None, help="Defaults to --model")
+    parser.add_argument("--thinking", default="high", choices=("off", "minimal", "low", "medium", "high", "xhigh"))
+    parser.add_argument("--observer-thinking", default="low", choices=("off", "minimal", "low", "medium", "high", "xhigh"))
+    parser.add_argument("--consolidator-thinking", default="medium", choices=("off", "minimal", "low", "medium", "high", "xhigh"))
+    parser.add_argument("--session-id", default=None)
+    parser.add_argument("--extension", type=Path, default=Path(__file__).parent / "extensions" / "observational-memory.ts")
+    parser.add_argument("--pacer-extension", type=Path, default=Path(__file__).parent / "extensions" / "request-pacer.ts")
+    parser.add_argument("--pi-cli", type=Path, help="Pi CLI entrypoint; defaults to the managed Pi installation")
+    parser.add_argument("--request-interval-seconds", type=float, default=0)
+    parser.add_argument("--memory-diagnostics", action="store_true", help="Record OM trigger/token diagnostics (adds benchmark-only ledger entries)")
+    parser.add_argument("--max-cost-usd", type=float, default=None, help="Stop before the next phase once reported trial spend reaches this limit")
+    parser.add_argument("--timeout", type=int, default=1800, help="Per-phase timeout in seconds")
+    parser.add_argument("--quota-pause-seconds", type=float, default=0, help="Wait after compaction to let the provider's per-minute quota window reset")
+    args = parser.parse_args()
+    if args.max_cost_usd is not None and (not math.isfinite(args.max_cost_usd) or args.max_cost_usd <= 0):
+        parser.error("--max-cost-usd must be greater than zero")
+    if args.condition == "native" and args.lookup_policy != "unchanged":
+        parser.error("--lookup-policy applies only to the OM condition")
+    return _run_trial(args, parser)
+
+
+def _run_trial(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    cwd = args.cwd.resolve()
+    run_dir = args.run_dir.resolve()
+    if not cwd.is_dir():
+        parser.error(f"worktree does not exist: {cwd}")
+    if not args.task_file.is_file():
+        parser.error(f"task prompt does not exist: {args.task_file}")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    session_dir = run_dir / "sessions"
+    session_dir.mkdir(parents=True, exist_ok=True)
+    session_id = args.session_id or f"bench-{args.condition}-{uuid.uuid4().hex[:12]}"
+    task_prompt = args.task_file.read_text(encoding="utf-8")
+    seeds = read_prompts(args)
+    configure_worker_models(
+        cwd, args.worker_model or args.model, args.observer_thinking, args.consolidator_thinking,
+        memory_diagnostics=args.memory_diagnostics and args.condition == "om",
+    )
+    pacing_dir = run_dir / "request-pacing"
+    command, env = build_rpc_command(args, session_id, session_dir, pacing_dir)
+    rpc = PiRpc(command, cwd, run_dir / "rpc-events.jsonl", env)
+    phase_times: dict[str, float] = {}
+    phase_costs: dict[str, dict[str, Any]] = {}
+    usage_state: dict[str, Any] = {"latest": None}
+    started = time.monotonic()
+    try:
+        compact, stats_response, entries_response = _run_trial_phases(
+            args, rpc, cwd, session_id, task_prompt, seeds, phase_times, phase_costs, usage_state,
         )
-        progress = [
-            entry.get("data", {})
-            for entry in entries
-            if entry.get("customType") == "om.benchmark.progress"
-        ]
-        trigger_hooks = [
-            entry.get("data", {})
-            for entry in entries
-            if entry.get("customType") == "om.benchmark.trigger-hook"
-        ]
-        pacing = read_pacing_metrics(pacing_dir)
-        worker_stats = collect_worker_stats(cwd, session_id) if args.condition == "om" else {"sessions": [], "tokens": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}, "costUsd": 0.0}
-        memory_trace = collect_memory_trace(run_dir, session_id) if args.memory_diagnostics and args.condition == "om" else {"available": False, "reason": "disabled", "eventCounts": {}}
-        topic_reads = collect_topic_reads(run_dir / "rpc-events.jsonl", cwd, session_id)
-        result = {
-            "condition": args.condition,
-            "lookupPolicy": args.lookup_policy,
-            "model": args.model,
-            "thinking": args.thinking,
-            "sessionId": session_id,
-            "cwd": str(cwd),
-            "startedAtEpoch": time.time() - (time.monotonic() - started),
-            "elapsedSeconds": time.monotonic() - started,
-            "activeElapsedSeconds": time.monotonic() - started - phase_times.get("quota_pause_seconds", 0) - pacing["mainDelaySeconds"],
-            "phaseSeconds": phase_times,
-            "requestPacing": pacing,
-            "compaction": compact.get("data", {}),
-            "stats": stats_response.get("data", {}),
-            "costAccounting": {"limitUsd": args.max_cost_usd, "phaseUsage": phase_costs, "finalUsage": latest_usage},
-            "memoryDiagnostics": {"lifecycleTrace": memory_trace, "topicReads": topic_reads},
-            "observationalMemory": {
-                "workerCostUsd": worker_cost,
-                "workerSessions": worker_stats["sessions"],
-                "workerTokens": worker_stats["tokens"],
-                "workerSessionCostUsd": worker_stats["costUsd"],
-                "observationEntries": sum(1 for entry in entries if entry.get("customType") == "om.observations.recorded"),
-                "costEntries": sum(1 for entry in entries if entry.get("customType") == "om.cost"),
-                "triggerProgressSamples": len(progress),
-                "maximumRawHistoryTokens": max((item.get("rawHistoryTokens", 0) for item in progress), default=0),
-                "configuredChunkTokens": max((item.get("chunkTokens", 0) for item in progress), default=0),
-                "productionTriggerHookCalls": len(trigger_hooks),
-                "maximumHookRawHistoryTokens": max((item.get("rawHistoryTokens", 0) for item in trigger_hooks), default=0),
-            },
-        }
+        latest_usage = usage_state["latest"]
+        result = _build_trial_result(
+            args, cwd, run_dir, session_id, started, phase_times, phase_costs,
+            latest_usage, compact, stats_response, entries_response, pacing_dir,
+        )
         (run_dir / "result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(result, indent=2))
     except Exception as error:
-        failure = {
-            "condition": args.condition,
-            "lookupPolicy": args.lookup_policy,
-            "model": args.model,
-            "sessionId": session_id,
-            "elapsedSeconds": time.monotonic() - started,
-            "activeElapsedSeconds": time.monotonic() - started - phase_times.get("quota_pause_seconds", 0) - read_pacing_metrics(pacing_dir)["mainDelaySeconds"],
-            "phaseSeconds": phase_times,
-            "phaseCostUsage": phase_costs,
-            "latestCostUsage": latest_usage,
-            "requestPacing": read_pacing_metrics(pacing_dir),
-            "error": str(error),
-        }
-        (run_dir / "failure.json").write_text(json.dumps(failure, indent=2) + "\n", encoding="utf-8")
+        _write_failure_report(
+            args, run_dir, session_id, started, phase_times, phase_costs,
+            usage_state["latest"], pacing_dir, error,
+        )
         raise
     finally:
         rpc.close()
