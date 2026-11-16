@@ -39,7 +39,7 @@ export function registerBenchmarkRequestPacer(pi: ExtensionAPI, options: Request
 	});
 }
 
-export default function (pi: ExtensionAPI): void {
+export function registerDefaultBenchmarkRequestPacer(pi: ExtensionAPI): void {
 	const intervalMs = Number.parseInt(process.env.PI_BENCHMARK_REQUEST_INTERVAL_MS ?? "15000", 10);
 	registerBenchmarkRequestPacer(pi, {
 		intervalMs: Number.isFinite(intervalMs) ? intervalMs : 15000,
@@ -47,3 +47,5 @@ export default function (pi: ExtensionAPI): void {
 		role: process.env.OM_WORKER ?? "main",
 	});
 }
+
+export default registerDefaultBenchmarkRequestPacer;
