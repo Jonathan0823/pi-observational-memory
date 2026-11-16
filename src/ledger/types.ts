@@ -118,7 +118,8 @@ export function isObservation(value: unknown): value is Observation {
 	return (
 		isNonEmptyString(value.timestamp) &&
 		isNonEmptyString(value.content) &&
-		!/\r|\n/.test(value.content) &&
+		!value.content.includes("\r") &&
+		!value.content.includes("\n") &&
 		isTokenCount(value.tokenCount) &&
 		(value.sourceRange === undefined || isObservationSourceRange(value.sourceRange))
 	);

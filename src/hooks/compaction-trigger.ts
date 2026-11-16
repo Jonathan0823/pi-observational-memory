@@ -12,8 +12,16 @@ const RESUME_PROMPT =
 	"Continue exactly where you left off, as if the compaction had not happened.";
 
 /** Pi's retryable-error detection: don't compact between an auto-retried turn's attempts. */
-const RETRYABLE_ERROR_RE =
-	/overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|http2 request did not get a response|timed? out|timeout|terminated|retry delay/i;
+const RETRYABLE_ERROR_PATTERNS = [
+	/overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504/i,
+	/service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost/i,
+	/websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up/i,
+	/ended without|http2 request did not get a response|timed? out|timeout|terminated|retry delay/i,
+];
+
+function isRetryableError(message: string): boolean {
+	return RETRYABLE_ERROR_PATTERNS.some((pattern) => pattern.test(message));
+}
 
 function contextPressureTokens(
 	ctx: { getContextUsage?: () => { tokens: number | null } | undefined; sessionManager: { getBranch: () => Entry[] } },
@@ -69,7 +77,7 @@ export function registerCompactionTrigger(pi: ExtensionAPI, runtime: Runtime): v
 			message?.role === "assistant" &&
 			message.stopReason === "error" &&
 			message.errorMessage &&
-			RETRYABLE_ERROR_RE.test(message.errorMessage)
+			isRetryableError(message.errorMessage)
 		) {
 			return;
 		}

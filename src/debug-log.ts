@@ -26,10 +26,12 @@ export function withDebugLogContext<T>(context: DebugLogContext, fn: () => T): T
 export function safeDebugLogSessionId(sessionId: string | undefined): string | undefined {
 	const trimmed = sessionId?.trim();
 	if (!trimmed) return undefined;
-	const sanitized = trimmed
-		.replace(/[^A-Za-z0-9._-]+/g, "_")
-		.replace(/^_+|_+$/g, "")
-		.slice(0, 128);
+	const normalized = trimmed.replace(/[^A-Za-z0-9._-]+/g, "_");
+	let start = 0;
+	let end = normalized.length;
+	while (start < end && normalized[start] === "_") start++;
+	while (end > start && normalized[end - 1] === "_") end--;
+	const sanitized = normalized.slice(start, end).slice(0, 128);
 	if (!/[A-Za-z0-9]/.test(sanitized)) return undefined;
 	return sanitized;
 }

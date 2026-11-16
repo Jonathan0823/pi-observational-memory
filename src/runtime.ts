@@ -176,14 +176,18 @@ export class Runtime {
 	/** Track an observer task for the lifetime of its async run. */
 	trackObserverTask(task: Promise<void>): void {
 		this.observerTasks.add(task);
-		void task.finally(() => this.observerTasks.delete(task));
+		void task.then(
+			() => this.observerTasks.delete(task),
+			() => this.observerTasks.delete(task),
+		);
 	}
 
 	/** Resolve once no observer tasks are in flight (compaction blocks on this). */
 	async whenObserversIdle(): Promise<void> {
-		while (this.observerTasks.size > 0) {
-			await Promise.allSettled([...this.observerTasks]);
-		}
+		const tasks = this.observerTasks;
+		if (tasks.size === 0) return;
+		await Promise.allSettled(tasks);
+		return this.whenObserversIdle();
 	}
 
 	get observerSlotsAvailable(): number {

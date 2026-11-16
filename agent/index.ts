@@ -31,12 +31,12 @@ export default function omWorker(pi: ExtensionAPI): void {
 		if (!resultPath) throw new Error("OM_RESULT_PATH not set for observer worker");
 		registerObserverTool(pi, resultPath);
 
-		pi.on("before_agent_start", async () => {
+		pi.on("before_agent_start", () => {
 			return { systemPrompt: OBSERVER_SYSTEM };
 		});
 
 		// Headless `pi -p` exits when the agent loop ends; shutdown is a belt-and-suspenders.
-		pi.on("agent_end", async (_event: unknown, ctx: { shutdown: () => void }) => {
+		pi.on("agent_end", (_event: unknown, ctx: { shutdown: () => void }) => {
 			ctx.shutdown();
 		});
 		return;
@@ -48,13 +48,12 @@ export default function omWorker(pi: ExtensionAPI): void {
 		if (!resultPath) throw new Error("OM_RESULT_PATH not set for consolidator worker");
 		registerConsolidatorTools(pi, memoryRoot, resultPath);
 
-		pi.on("before_agent_start", async () => {
+		pi.on("before_agent_start", () => {
 			return { systemPrompt: CONSOLIDATOR_SYSTEM };
 		});
 
-		pi.on("agent_end", async (_event: unknown, ctx: { shutdown: () => void }) => {
+		pi.on("agent_end", (_event: unknown, ctx: { shutdown: () => void }) => {
 			ctx.shutdown();
 		});
-		return;
 	}
 }

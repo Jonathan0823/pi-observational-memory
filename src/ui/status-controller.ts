@@ -182,7 +182,8 @@ export class StatusController {
 		const next = `${theme.fg("muted", "O")}${this.gaugeBar(g.nextValue, g.nextMax)}`;
 		const pool = `${theme.fg("muted", "C")}${this.gaugeBar(g.poolValue, g.poolMax)}`;
 		const ctx = `${theme.fg("muted", "X")}${this.gaugeBar(g.ctxValue, g.ctxMax)}`;
-		const cost = this.cost ? ` ${theme.fg("dim", `$${this.cost.costUsd.toFixed(3)}`)}` : "";
+		const costLabel = this.cost ? `$${this.cost.costUsd.toFixed(3)}` : "";
+		const cost = costLabel ? ` ${theme.fg("dim", costLabel)}` : "";
 		return `${next}  ${pool}  ${ctx}${cost}`;
 	}
 
@@ -200,16 +201,15 @@ export class StatusController {
 		const theme = ui.theme;
 		const parts: string[] = [];
 		for (const entry of this.workers.values()) {
+			const workerLabel = `[${entry.type}]`;
 			if (entry.state.kind === "running") {
-				parts.push(`${theme.fg("accent", SPINNER_FRAMES[this.frame])} ${theme.fg("accent", `[${entry.type}]`)}`);
+				parts.push(`${theme.fg("accent", SPINNER_FRAMES[this.frame])} ${theme.fg("accent", workerLabel)}`);
 			} else if (entry.state.kind === "error") {
-				parts.push(`${theme.fg("error", "✗")} ${theme.fg("muted", `[${entry.type}]`)}`);
+				parts.push(`${theme.fg("error", "✗")} ${theme.fg("muted", workerLabel)}`);
 			} else {
-				const delta =
-					entry.state.delta && entry.state.delta > 0
-						? ` ${theme.fg("success", `+${entry.state.delta}`)}`
-						: "";
-				parts.push(`${theme.fg("success", "✓")} ${theme.fg("muted", `[${entry.type}]`)}${delta}`);
+				const deltaText = entry.state.delta && entry.state.delta > 0 ? `+${entry.state.delta}` : "";
+				const delta = deltaText ? ` ${theme.fg("success", deltaText)}` : "";
+				parts.push(`${theme.fg("success", "✓")} ${theme.fg("muted", workerLabel)}${delta}`);
 			}
 		}
 		ui.setWidget(WORKERS_WIDGET_KEY, [parts.join(WORKER_SEP)]);

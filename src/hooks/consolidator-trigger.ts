@@ -33,6 +33,7 @@ import type { Runtime } from "../runtime.js";
 import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
 import { readConsolidatorResult, runResultPath } from "../spawn/runs.js";
 import { recordWorkerCost } from "./observer-trigger.js";
+import { throwIfWorkerFailed } from "./worker-exit.js";
 
 type TriggerCtx = {
 	hasUI: boolean;
@@ -78,6 +79,28 @@ function buildConsolidatorPrompt(memoryRoot: string, promote: Observation[], jou
 	);
 }
 
+function validateSavedTopicPath(topicPath: string, memoryRoot: string, realRoot: string): void {
+	const destination = resolveWithinMemory(memoryRoot, topicPath);
+	const relativePath = destination ? relative(memoryRoot, destination) : "";
+	if (
+		!destination ||
+		relativePath === "" ||
+		relativePath.includes(sep) ||
+		!relativePath.endsWith(".md") ||
+		["index.md", "journey.md"].includes(relativePath.toLowerCase())
+	) {
+		throw new Error(`consolidator report has invalid topic path: ${topicPath}`);
+	}
+	if (!existsSync(destination) || !statSync(destination).isFile()) {
+		throw new Error(`consolidator report topic file does not exist: ${topicPath}`);
+	}
+	const realDestination = realpathSync(destination);
+	const realRelative = relative(realRoot, realDestination);
+	if (realRelative === ".." || realRelative.startsWith(`..${sep}`)) {
+		throw new Error(`consolidator report topic path escapes session memory: ${topicPath}`);
+	}
+}
+
 function validateConsolidatorReport(
 	decisions: ReturnType<typeof readConsolidatorResult>["decisions"],
 	promote: Observation[],
@@ -92,33 +115,57 @@ function validateConsolidatorReport(
 		if (!expected.has(decision.timestamp)) throw new Error(`consolidator report references unknown observation ${decision.timestamp}`);
 		if (seen.has(decision.timestamp)) throw new Error(`consolidator report duplicates observation ${decision.timestamp}`);
 		seen.add(decision.timestamp);
-		if (decision.outcome !== "saved") continue;
-
-		const topicPath = decision.topicPath;
-		const destination = resolveWithinMemory(memoryRoot, topicPath);
-		const relativePath = destination ? relative(memoryRoot, destination) : "";
-		if (
-			!destination ||
-			relativePath === "" ||
-			relativePath.includes(sep) ||
-			!relativePath.endsWith(".md") ||
-			["index.md", "journey.md"].includes(relativePath.toLowerCase())
-		) {
-			throw new Error(`consolidator report has invalid topic path: ${topicPath}`);
-		}
-		if (!existsSync(destination) || !statSync(destination).isFile()) {
-			throw new Error(`consolidator report topic file does not exist: ${topicPath}`);
-		}
-		const realDestination = realpathSync(destination);
-		const realRelative = relative(realRoot, realDestination);
-		if (realRelative === ".." || realRelative.startsWith(`..${sep}`)) {
-			throw new Error(`consolidator report topic path escapes session memory: ${topicPath}`);
-		}
+		if (decision.outcome === "saved") validateSavedTopicPath(decision.topicPath, memoryRoot, realRoot);
 	}
 
 	for (const timestamp of expected) {
 		if (!seen.has(timestamp)) throw new Error(`consolidator report is missing observation ${timestamp}`);
 	}
+}
+
+function commitConsolidatorResult(
+	pi: ExtensionAPI,
+	runtime: Runtime,
+	ctx: TriggerCtx,
+	promote: Observation[],
+	report: ReturnType<typeof readConsolidatorResult>,
+	runId: string,
+): number {
+	validateConsolidatorReport(report.decisions, promote, runtime.memoryRoot);
+
+	// Re-fold against the CURRENT branch so we never tombstone something already dropped or an
+	// observation an observer committed during this run (those are not in the handed batch).
+	const branch = ctx.sessionManager.getBranch();
+	const stillActive = new Set(foldLedger(branch).activeObservations.map((o) => o.timestamp));
+	const toDrop = report.decisions.map((decision) => decision.timestamp).filter((t) => stillActive.has(t));
+
+	if (toDrop.length > 0) {
+		const coversUpToId = lastSourceEntryId(branch);
+		if (coversUpToId) {
+			pi.appendEntry(OM_OBSERVATIONS_DROPPED, { observationTimestamps: toDrop, coversUpToId });
+		}
+	}
+
+	// Re-render INDEX.md so live ls/grep truth leads the pushed map (design risk 3).
+	atomicWrite(indexPath(runtime.memoryRoot), renderIndexFile(listTopics(runtime.memoryRoot)));
+	runtime.recordDiagnostic("consolidator.completed", {
+		runId,
+		decidedObservationCount: report.decisions.length,
+		droppedObservationCount: toDrop.length,
+		savedTopicPaths: [...new Set(report.decisions.filter((decision) => decision.outcome === "saved").map((decision) => decision.topicPath))],
+		savedTopicReferences: report.decisions.flatMap((decision) => {
+			if (decision.outcome !== "saved") return [];
+			const observation = promote.find((item) => item.timestamp === decision.timestamp);
+			return [{ topicPath: decision.topicPath, sourceRange: observation?.sourceRange }];
+		}),
+	});
+
+	runtime.status.workerDone(runId, toDrop.length);
+	runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
+	if (ctx.hasUI && ctx.ui) {
+		runtime.queueToast(`om: consolidator promoted ${toDrop.length} obs`, "info", ctx.ui.notify.bind(ctx.ui));
+	}
+	return toDrop.length;
 }
 
 export function evaluateConsolidatorTrigger(
@@ -177,9 +224,7 @@ async function dispatchConsolidator(
 		const exit = await workerLauncher({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
 		recordWorkerCost(pi, runtime, ctx, "consolidator", runId);
-		if (exit.code !== 0) {
-			throw new Error(`consolidator exited with code ${exit.code}${exit.stderr ? `: ${exit.stderr.trim().slice(0, 200)}` : ""}`);
-		}
+		throwIfWorkerFailed("consolidator", exit);
 
 		let report: ReturnType<typeof readConsolidatorResult>;
 		try {
@@ -188,40 +233,7 @@ async function dispatchConsolidator(
 			const detail = error instanceof Error ? error.message : String(error);
 			throw new Error(`invalid consolidator report: ${detail}`);
 		}
-		validateConsolidatorReport(report.decisions, promote, runtime.memoryRoot);
-
-		// Re-fold against the CURRENT branch so we never tombstone something already dropped or an
-		// observation an observer committed during this run (those are not in the handed batch).
-		const branch = ctx.sessionManager.getBranch();
-		const stillActive = new Set(foldLedger(branch).activeObservations.map((o) => o.timestamp));
-		const toDrop = report.decisions.map((decision) => decision.timestamp).filter((t) => stillActive.has(t));
-
-		if (toDrop.length > 0) {
-			const coversUpToId = lastSourceEntryId(branch);
-			if (coversUpToId) {
-				pi.appendEntry(OM_OBSERVATIONS_DROPPED, { observationTimestamps: toDrop, coversUpToId });
-			}
-		}
-
-		// Re-render INDEX.md so live ls/grep truth leads the pushed map (design risk 3).
-		atomicWrite(indexPath(runtime.memoryRoot), renderIndexFile(listTopics(runtime.memoryRoot)));
-		runtime.recordDiagnostic("consolidator.completed", {
-			runId,
-			decidedObservationCount: report.decisions.length,
-			droppedObservationCount: toDrop.length,
-			savedTopicPaths: [...new Set(report.decisions.filter((decision) => decision.outcome === "saved").map((decision) => decision.topicPath))],
-			savedTopicReferences: report.decisions.flatMap((decision) => {
-				if (decision.outcome !== "saved") return [];
-				const observation = promote.find((item) => item.timestamp === decision.timestamp);
-				return [{ topicPath: decision.topicPath, sourceRange: observation?.sourceRange }];
-			}),
-		});
-
-		runtime.status.workerDone(runId, toDrop.length);
-		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
-		if (ctx.hasUI && ctx.ui) {
-			runtime.queueToast(`om: consolidator promoted ${toDrop.length} obs`, "info", ctx.ui.notify.bind(ctx.ui));
-		}
+		commitConsolidatorResult(pi, runtime, ctx, promote, report, runId);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		runtime.lastWorkerError = message;

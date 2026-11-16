@@ -16,8 +16,14 @@ export function observationToLine(observation: Observation): string {
 }
 
 /** Sort observations chronologically by their timestamp-id (lexicographic == chronological). */
+function compareObservationTimestamps(a: Observation, b: Observation): number {
+	if (a.timestamp < b.timestamp) return -1;
+	if (a.timestamp > b.timestamp) return 1;
+	return 0;
+}
+
 export function sortObservations(observations: Observation[]): Observation[] {
-	return [...observations].sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0));
+	return [...observations].sort(compareObservationTimestamps);
 }
 
 /**

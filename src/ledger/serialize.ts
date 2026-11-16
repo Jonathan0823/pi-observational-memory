@@ -27,35 +27,25 @@ export function truncateRecordContent(content: string): string {
 	return `${head} … [truncated ${dropped} chars]`;
 }
 
+function textPlaceholder(block: unknown, includeThinking: boolean): string {
+	if (!block || typeof block !== "object") return "[non-text content omitted]";
+	const item = block as Record<string, unknown>;
+	if (item.type === "text" && typeof item.text === "string") return item.text;
+	if (item.type === "thinking" && includeThinking && typeof item.thinking === "string") {
+		return `[thinking: ${item.thinking}]`;
+	}
+	if (item.type === "toolCall" && typeof item.name === "string") {
+		return `[${item.name}(${JSON.stringify(item.arguments ?? {})})]`;
+	}
+	return "[non-text content omitted]";
+}
+
 function textAndPlaceholders(content: unknown, options: { includeThinking?: boolean } = {}): string {
 	if (typeof content === "string") return content;
 	if (!Array.isArray(content)) return "[non-text content omitted]";
-
-	const parts: string[] = [];
-	for (const block of content as Array<Record<string, unknown>>) {
-		if (!block || typeof block !== "object") {
-			parts.push("[non-text content omitted]");
-			continue;
-		}
-		if (block.type === "text" && typeof block.text === "string") {
-			parts.push(block.text);
-			continue;
-		}
-		if (block.type === "thinking") {
-			if (options.includeThinking && typeof block.thinking === "string") {
-				parts.push(`[thinking: ${block.thinking}]`);
-				continue;
-			}
-			parts.push("[non-text content omitted]");
-			continue;
-		}
-		if (block.type === "toolCall" && typeof block.name === "string") {
-			parts.push(`[${block.name}(${JSON.stringify(block.arguments ?? {})})]`);
-			continue;
-		}
-		parts.push("[non-text content omitted]");
-	}
-	return parts.join("\n");
+	return (content as unknown[])
+		.map((block) => textPlaceholder(block, options.includeThinking === true))
+		.join("\n");
 }
 
 function textOnly(content: unknown): string {
@@ -68,23 +58,22 @@ function textOnly(content: unknown): string {
 		.join("\n");
 }
 
+function serializeMessage(msg: Message): string | null {
+	const time = formatTimestamp(msg.timestamp);
+	if (msg.role === "user") return `[User @ ${time}]: ${textOnly(msg.content)}`;
+	if (msg.role === "assistant") {
+		const body = textAndPlaceholders(msg.content, { includeThinking: true })
+			.split("\n")
+			.filter(Boolean)
+			.join("\n");
+		return body ? `[Assistant @ ${time}]: ${body}` : null;
+	}
+	return `[Tool result for ${(msg as ToolResultMessage).toolName} @ ${time}]: ${textOnly(msg.content)}`;
+}
+
 export function serializeConversation(messages: Message[]): string {
 	return messages
-		.map((msg): string | null => {
-			const time = formatTimestamp(msg.timestamp);
-			if (msg.role === "user") {
-				return `[User @ ${time}]: ${textOnly(msg.content)}`;
-			}
-			if (msg.role === "assistant") {
-				const body = textAndPlaceholders(msg.content, { includeThinking: true })
-					.split("\n")
-					.filter(Boolean)
-					.join("\n");
-				if (!body) return null;
-				return `[Assistant @ ${time}]: ${body}`;
-			}
-			return `[Tool result for ${(msg as ToolResultMessage).toolName} @ ${time}]: ${textOnly(msg.content)}`;
-		})
+		.map(serializeMessage)
 		.filter((line): line is string => line !== null)
 		.join("\n\n");
 }
@@ -99,17 +88,18 @@ export type RenderableEntry = {
 	summary?: unknown;
 };
 
+function customMessageText(content: unknown): string {
+	if (typeof content === "string") return content;
+	if (!Array.isArray(content)) return "";
+	return (content as Array<{ type?: string; text?: string }>)
+		.filter((block) => block?.type === "text" && typeof block.text === "string")
+		.map((block) => block.text as string)
+		.join("\n");
+}
+
 function renderCustomMessage(entry: RenderableEntry): string {
 	const time = formatTimestamp(entry.timestamp);
-	const text =
-		typeof entry.content === "string"
-			? entry.content
-			: Array.isArray(entry.content)
-				? (entry.content as Array<{ type?: string; text?: string }>)
-						.filter((b) => b?.type === "text" && typeof b.text === "string")
-						.map((b) => b.text as string)
-						.join("\n")
-				: "";
+	const text = customMessageText(entry.content);
 	const tag = entry.customType ? `Custom (${entry.customType})` : "Custom";
 	return `[${tag} @ ${time}]: ${text}`;
 }

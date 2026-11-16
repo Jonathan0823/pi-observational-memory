@@ -33,6 +33,22 @@ function isCustomEntry(entry: Entry, customType: string): boolean {
 	return entry.type === "custom" && entry.customType === customType;
 }
 
+function foldRecordedObservations(entry: Entry, observationsByTimestamp: Map<string, Observation>): void {
+	if (!isObservationsRecordedData(entry.data)) return;
+	for (const observation of entry.data.observations) {
+		if (!observationsByTimestamp.has(observation.timestamp)) {
+			observationsByTimestamp.set(observation.timestamp, observation);
+		}
+	}
+}
+
+function foldDroppedObservations(entry: Entry, droppedObservationTimestamps: Set<string>): void {
+	if (!isObservationsDroppedData(entry.data)) return;
+	for (const timestamp of entry.data.observationTimestamps) {
+		droppedObservationTimestamps.add(timestamp);
+	}
+}
+
 /**
  * Fold valid memory ledger entries from the branch root through the target entry.
  *
@@ -51,20 +67,12 @@ export function foldLedger(entries: Entry[], options: FoldLedgerOptions = {}): F
 		if (!entry) continue;
 
 		if (isCustomEntry(entry, OM_OBSERVATIONS_RECORDED)) {
-			if (!isObservationsRecordedData(entry.data)) continue;
-			for (const observation of entry.data.observations) {
-				if (!observationsByTimestamp.has(observation.timestamp)) {
-					observationsByTimestamp.set(observation.timestamp, observation);
-				}
-			}
+			foldRecordedObservations(entry, observationsByTimestamp);
 			continue;
 		}
 
 		if (isCustomEntry(entry, OM_OBSERVATIONS_DROPPED)) {
-			if (!isObservationsDroppedData(entry.data)) continue;
-			for (const timestamp of entry.data.observationTimestamps) {
-				droppedObservationTimestamps.add(timestamp);
-			}
+			foldDroppedObservations(entry, droppedObservationTimestamps);
 		}
 	}
 

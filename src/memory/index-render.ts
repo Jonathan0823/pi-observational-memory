@@ -30,10 +30,7 @@ export function renderIndexFile(topics: Topic[]): string {
 	parts.push("Durable memory topics for this project. Read a file for its full current state.", "");
 	for (const topic of topics) {
 		const updated = topic.updated ? ` · updated ${topic.updated}` : "";
-		parts.push(`## ${titleOf(topic)}`);
-		parts.push(`- \`${topic.path}\`${updated}`);
-		parts.push(`- ${summaryOf(topic)}`);
-		parts.push("");
+		parts.push(`## ${titleOf(topic)}`, `- \`${topic.path}\`${updated}`, `- ${summaryOf(topic)}`, "");
 	}
 	return `${parts.join("\n").trimEnd()}\n`;
 }

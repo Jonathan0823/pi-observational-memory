@@ -25,6 +25,14 @@ function fail(text: string): ToolText {
 	return { content: [{ type: "text" as const, text: `Error: ${text}` }], details: { error: true } };
 }
 
+function promiseResult<T>(operation: () => T): Promise<T> {
+	try {
+		return Promise.resolve(operation());
+	} catch (error) {
+		return Promise.reject(error);
+	}
+}
+
 /** Resolve a requested path against the sandbox root, or return undefined if it escapes. */
 function scoped(root: string, requested: string): string | undefined {
 	const abs = resolve(root, requested);
@@ -97,11 +105,13 @@ export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string, 
 		label: "Read memory file",
 		description: "Read a topic file under .memory/.",
 		parameters: ReadSchema,
-		async execute(_id: string, params: ReadInput): Promise<ToolText> {
-			const abs = scoped(root, params.path);
-			if (!abs) return fail("path escapes .memory/");
-			if (!existsSync(abs)) return fail(`no such file: ${params.path}`);
-			return ok(readFileSync(abs, "utf-8"));
+		execute(_id: string, params: ReadInput): Promise<ToolText> {
+			return promiseResult(() => {
+				const abs = scoped(root, params.path);
+				if (!abs) return fail("path escapes .memory/");
+				if (!existsSync(abs)) return fail(`no such file: ${params.path}`);
+				return ok(readFileSync(abs, "utf-8"));
+			});
 		},
 	});
 
@@ -110,12 +120,14 @@ export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string, 
 		label: "Write memory file",
 		description: "Create or overwrite a topic file under .memory/ (atomic). Do not write INDEX.md.",
 		parameters: WriteSchema,
-		async execute(_id: string, params: WriteInput): Promise<ToolText> {
-			const abs = scoped(root, params.path);
-			if (!abs) return fail("path escapes .memory/");
-			if (/(^|\/)INDEX\.md$/i.test(params.path)) return fail("INDEX.md is generated automatically; do not write it");
-			atomicWrite(abs, params.content);
-			return ok(`Wrote ${params.path} (${params.content.length} bytes).`);
+		execute(_id: string, params: WriteInput): Promise<ToolText> {
+			return promiseResult(() => {
+				const abs = scoped(root, params.path);
+				if (!abs) return fail("path escapes .memory/");
+				if (/(^|\/)INDEX\.md$/i.test(params.path)) return fail("INDEX.md is generated automatically; do not write it");
+				atomicWrite(abs, params.content);
+				return ok(`Wrote ${params.path} (${params.content.length} bytes).`);
+			});
 		},
 	});
 
@@ -124,17 +136,19 @@ export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string, 
 		label: "Edit memory file",
 		description: "Replace an exact substring in a topic file under .memory/ (atomic).",
 		parameters: EditSchema,
-		async execute(_id: string, params: EditInput): Promise<ToolText> {
-			const abs = scoped(root, params.path);
-			if (!abs) return fail("path escapes .memory/");
-			if (/(^|\/)INDEX\.md$/i.test(params.path)) return fail("INDEX.md is generated automatically; do not edit it");
-			if (!existsSync(abs)) return fail(`no such file: ${params.path}`);
-			const current = readFileSync(abs, "utf-8");
-			const occurrences = current.split(params.oldText).length - 1;
-			if (occurrences === 0) return fail("oldText not found");
-			if (occurrences > 1) return fail(`oldText is ambiguous (${occurrences} matches); add more context`);
-			atomicWrite(abs, current.replace(params.oldText, params.newText));
-			return ok(`Edited ${params.path}.`);
+		execute(_id: string, params: EditInput): Promise<ToolText> {
+			return promiseResult(() => {
+				const abs = scoped(root, params.path);
+				if (!abs) return fail("path escapes .memory/");
+				if (/(^|\/)INDEX\.md$/i.test(params.path)) return fail("INDEX.md is generated automatically; do not edit it");
+				if (!existsSync(abs)) return fail(`no such file: ${params.path}`);
+				const current = readFileSync(abs, "utf-8");
+				const occurrences = current.split(params.oldText).length - 1;
+				if (occurrences === 0) return fail("oldText not found");
+				if (occurrences > 1) return fail(`oldText is ambiguous (${occurrences} matches); add more context`);
+				atomicWrite(abs, current.replace(params.oldText, params.newText));
+				return ok(`Edited ${params.path}.`);
+			});
 		},
 	});
 
@@ -143,12 +157,14 @@ export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string, 
 		label: "List memory files",
 		description: "List files under .memory/.",
 		parameters: LsSchema,
-		async execute(_id: string, params: LsInput): Promise<ToolText> {
-			const abs = scoped(root, params.path ?? ".");
-			if (!abs) return fail("path escapes .memory/");
-			if (!existsSync(abs)) return ok("(.memory/ is empty)");
-			const entries = readdirSync(abs).filter((n) => !n.startsWith("."));
-			return ok(entries.length > 0 ? entries.sort().join("\n") : "(empty)");
+		execute(_id: string, params: LsInput): Promise<ToolText> {
+			return promiseResult(() => {
+				const abs = scoped(root, params.path ?? ".");
+				if (!abs) return fail("path escapes .memory/");
+				if (!existsSync(abs)) return ok("(.memory/ is empty)");
+				const entries = readdirSync(abs).filter((n) => !n.startsWith("."));
+				return ok(entries.length > 0 ? [...entries].sort((a, b) => a.localeCompare(b)).join("\n") : "(empty)");
+			});
 		},
 	});
 
@@ -157,9 +173,11 @@ export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string, 
 		label: "Account for consolidated observations",
 		description: "Report every handed observation as saved to a topic file or intentionally discarded with a reason. Call once when all topic edits are complete.",
 		parameters: ConsolidationReportSchema,
-		async execute(_id: string, params: ConsolidationReportInput): Promise<ToolText> {
-			writeConsolidatorResult(reportPath, { decisions: params.decisions });
-			return ok(`Reported ${params.decisions.length} observation decisions.`);
+		execute(_id: string, params: ConsolidationReportInput): Promise<ToolText> {
+			return promiseResult(() => {
+				writeConsolidatorResult(reportPath, { decisions: params.decisions });
+				return ok(`Reported ${params.decisions.length} observation decisions.`);
+			});
 		},
 	});
 
@@ -168,27 +186,29 @@ export function registerConsolidatorTools(pi: ExtensionAPI, memoryRoot: string, 
 		label: "Search memory files",
 		description: "Search topic files under .memory/ with a regular expression.",
 		parameters: GrepSchema,
-		async execute(_id: string, params: GrepInput): Promise<ToolText> {
-			let re: RegExp;
-			try {
-				re = new RegExp(params.pattern);
-			} catch (e) {
-				return fail(`invalid regex: ${(e as Error).message}`);
-			}
-			const base = scoped(root, params.path ?? ".");
-			if (!base) return fail("path escapes .memory/");
-			if (!existsSync(base)) return ok("(no matches)");
-			const files = statSync(base).isDirectory() ? listFilesRecursive(base) : [base];
-			const hits: string[] = [];
-			for (const file of files) {
-				const lines = readFileSync(file, "utf-8").split("\n");
-				const relPath = relative(root, file);
-				lines.forEach((line, i) => {
-					if (re.test(line)) hits.push(`${relPath}:${i + 1}: ${line.trim()}`);
-				});
-				if (hits.length >= 200) break;
-			}
-			return ok(hits.length > 0 ? hits.join("\n") : "(no matches)");
+		execute(_id: string, params: GrepInput): Promise<ToolText> {
+			return promiseResult(() => {
+				let re: RegExp;
+				try {
+					re = new RegExp(params.pattern);
+				} catch (e) {
+					return fail(`invalid regex: ${(e as Error).message}`);
+				}
+				const base = scoped(root, params.path ?? ".");
+				if (!base) return fail("path escapes .memory/");
+				if (!existsSync(base)) return ok("(no matches)");
+				const files = statSync(base).isDirectory() ? listFilesRecursive(base) : [base];
+				const hits: string[] = [];
+				for (const file of files) {
+					const lines = readFileSync(file, "utf-8").split("\n");
+					const relPath = relative(root, file);
+					lines.forEach((line, i) => {
+						if (re.test(line)) hits.push(`${relPath}:${i + 1}: ${line.trim()}`);
+					});
+					if (hits.length >= 200) break;
+				}
+				return ok(hits.length > 0 ? hits.join("\n") : "(no matches)");
+			});
 		},
 	});
 }
