@@ -11,6 +11,7 @@
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerCompactCommand } from "./commands/compact.js";
+import { debugLog, withDebugLogContext } from "./debug-log.js";
 import { registerConsolidateCommand } from "./commands/consolidate.js";
 import { registerStatusCommand } from "./commands/status.js";
 import { registerCompactionHook } from "./hooks/compaction-hook.js";
@@ -45,6 +46,14 @@ export default function observationalMemory(pi: ExtensionAPI): void {
 
 	pi.on("session_start", (_event: unknown, ctx: any) => {
 		runtime.ensureConfig(ctx.cwd);
+		const traceContext = {
+			enabled: runtime.config.debugLog,
+			cwd: ctx.cwd,
+			sessionId: ctx.sessionManager.getSessionId(),
+		};
+		runtime.diagnosticSink = (event, data) => {
+			withDebugLogContext(traceContext, () => debugLog(event, data));
+		};
 		runtime.dispatchedCoversUpToId = undefined;
 		const branch = ctx.sessionManager.getBranch() as Entry[];
 		runtime.enabled = readGateFromLedger(branch);

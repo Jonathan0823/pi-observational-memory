@@ -151,8 +151,18 @@ export function registerCompactionHook(pi: ExtensionAPI, runtime: Runtime): void
 			// (throwaway projections — cannot decay). The journey is the running descriptive history
 			// the consolidator maintains; the map is the topic-file index.
 			const journey = readJourney(runtime.memoryRoot);
-			const map = renderMemoryMap(listTopics(runtime.memoryRoot));
+			const topics = listTopics(runtime.memoryRoot);
+			const map = renderMemoryMap(topics);
 			const summary = renderSummary(journey, map, projection.observations);
+			runtime.recordDiagnostic("compaction.rendered", {
+				firstKeptEntryId: snapped,
+				tokensBefore,
+				durableTopicCount: topics.length,
+				hasJourney: Boolean(journey),
+				observationCount: projection.observations.length,
+				sourceRangeCount: projection.observations.filter((observation) => observation.sourceRange).length,
+				summaryChars: summary.length,
+			});
 
 			return {
 				compaction: {

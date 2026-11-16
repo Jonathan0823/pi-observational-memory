@@ -51,7 +51,16 @@ export function registerSourceRecallTool(
 			"This is read-only and cannot search unrelated sessions or ranges.",
 		parameters: RecallSourceSchema,
 		async execute(_id: string, params: RecallSourceInput, _signal: AbortSignal | undefined, _onUpdate: unknown, ctx: ExtensionContext): Promise<ToolText> {
+			runtime.recordDiagnostic("source_recall.started", {
+				sourceRange: params.sourceRange,
+				requestedChars: params.maxChars ?? DEFAULT_SOURCE_RECALL_CHARS,
+				continued: Boolean(params.cursor),
+			});
 			if (!runtime.enabled || !runtime.memoryRoot) {
+				runtime.recordDiagnostic("source_recall.unavailable", {
+					sourceRange: params.sourceRange,
+					reason: "memory_inactive",
+				});
 				return unavailable("observational memory is not active for this session.");
 			}
 			const result = readSourceRangePage(
@@ -62,11 +71,23 @@ export function registerSourceRecallTool(
 				params.cursor as SourceRecallCursor | undefined,
 				params.maxChars ?? DEFAULT_SOURCE_RECALL_CHARS,
 			);
-			if (!result.available) return unavailable(result.reason);
+			if (!result.available) {
+				runtime.recordDiagnostic("source_recall.unavailable", {
+					sourceRange: params.sourceRange,
+					reason: result.reason,
+				});
+				return unavailable(result.reason);
+			}
 
 			const cursorNotice = result.page.nextCursor
 				? `\n\nMore source is available. Continue with cursor ${JSON.stringify(result.page.nextCursor)}.`
 				: "";
+			runtime.recordDiagnostic("source_recall.completed", {
+				sourceRange: params.sourceRange,
+				returnedEntryCount: result.page.returnedEntryIds.length,
+				returnedChars: result.page.text.length,
+				hasNextPage: Boolean(result.page.nextCursor),
+			});
 			return {
 				content: [{ type: "text", text: result.page.text + cursorNotice }],
 				details: {

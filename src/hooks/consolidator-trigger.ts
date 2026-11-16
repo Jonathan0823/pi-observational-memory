@@ -132,12 +132,20 @@ export function evaluateConsolidatorTrigger(
 
 	const branch = ctx.sessionManager.getBranch();
 	const active = foldLedger(branch).activeObservations;
-	if (poolTokens(active) < runtime.config.consolidateAtPoolTokens) return;
+	const activePoolTokens = poolTokens(active);
+	if (activePoolTokens < runtime.config.consolidateAtPoolTokens) return;
 
-	const { promote } = selectPromotionOverflow(active, runtime.config.poolTargetTokens);
+	const { promote, keptTokens } = selectPromotionOverflow(active, runtime.config.poolTargetTokens);
 	if (promote.length === 0) return;
 
 	runtime.consolidatorInFlight = true;
+	runtime.recordDiagnostic("consolidator.started", {
+		activePoolTokens,
+		thresholdTokens: runtime.config.consolidateAtPoolTokens,
+		promotedObservationCount: promote.length,
+		promotedTokens: poolTokens(promote),
+		keptTokens,
+	});
 	if (ctx.hasUI) {
 		ctx.ui?.notify(`om: consolidator started (${promote.length} obs, ~${poolTokens(promote).toLocaleString()} tok)`, "info");
 	}
@@ -197,6 +205,17 @@ async function dispatchConsolidator(
 
 		// Re-render INDEX.md so live ls/grep truth leads the pushed map (design risk 3).
 		atomicWrite(indexPath(runtime.memoryRoot), renderIndexFile(listTopics(runtime.memoryRoot)));
+		runtime.recordDiagnostic("consolidator.completed", {
+			runId,
+			decidedObservationCount: report.decisions.length,
+			droppedObservationCount: toDrop.length,
+			savedTopicPaths: [...new Set(report.decisions.filter((decision) => decision.outcome === "saved").map((decision) => decision.topicPath))],
+			savedTopicReferences: report.decisions.flatMap((decision) => {
+				if (decision.outcome !== "saved") return [];
+				const observation = promote.find((item) => item.timestamp === decision.timestamp);
+				return [{ topicPath: decision.topicPath, sourceRange: observation?.sourceRange }];
+			}),
+		});
 
 		runtime.status.workerDone(runId, toDrop.length);
 		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
@@ -206,6 +225,7 @@ async function dispatchConsolidator(
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		runtime.lastWorkerError = message;
+		runtime.recordDiagnostic("consolidator.failed", { runId, errorName: error instanceof Error ? error.name : "UnknownError" });
 		runtime.status.workerError(runId);
 		if (ctx.hasUI) ctx.ui?.notify(`om: consolidator failed: ${message}`, "error");
 	} finally {
