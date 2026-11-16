@@ -23,7 +23,7 @@ export function trackWorkerCost(pi: ExtensionAPI): void {
 
 	let costUsd = 0;
 
-	pi.on("message_end", async (event: { message?: MaybeAssistantMessage }) => {
+	pi.on("message_end", (event: { message?: MaybeAssistantMessage }) => {
 		const message = event?.message;
 		if (message?.role !== "assistant") return;
 		const total = message.usage?.cost?.total;
@@ -35,7 +35,7 @@ export function trackWorkerCost(pi: ExtensionAPI): void {
 	// Write before the role's agent_end shutdown handler runs (handlers fire in registration
 	// order; trackWorkerCost is registered first). Best-effort: a write failure must not crash
 	// the worker.
-	pi.on("agent_end", async () => {
+	pi.on("agent_end", () => {
 		try {
 			writeWorkerCost(costPath, { costUsd });
 		} catch {
