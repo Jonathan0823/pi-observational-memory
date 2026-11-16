@@ -32,3 +32,5 @@ npm-debug.log*
 .memory/
 # Generated improved-design benchmark archives are kept out of Git.
 benchmarks/results/improved-design-round*/
+.pi/
+.scannerwork/
