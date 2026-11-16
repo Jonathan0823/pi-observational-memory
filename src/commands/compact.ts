@@ -4,14 +4,14 @@ import type { Runtime } from "../runtime.js";
 export function registerCompactCommand(pi: ExtensionAPI, runtime: Runtime): void {
 	pi.registerCommand("om:compact", {
 		description: "Force an observational-memory compaction now (ignores threshold)",
-		handler: async (_args: string, ctx: any) => {
+		handler: (_args: string, ctx: any) => {
 			if (!runtime.enabled) {
 				if (ctx.hasUI) ctx.ui.notify("om is off (use /om on to enable)", "info");
-				return;
+				return Promise.resolve();
 			}
 			if (runtime.compactInFlight) {
 				if (ctx.hasUI) ctx.ui.notify("om: compaction already in progress", "warning");
-				return;
+				return Promise.resolve();
 			}
 			runtime.compactInFlight = true;
 			// The before-compact hook waits for in-flight observers before folding (design R5),
@@ -28,6 +28,7 @@ export function registerCompactCommand(pi: ExtensionAPI, runtime: Runtime): void
 					if (ctx.hasUI) ctx.ui.notify(`om: ${error.message}`, "error");
 				},
 			});
+			return Promise.resolve();
 		},
 	});
 }

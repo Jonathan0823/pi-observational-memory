@@ -5,14 +5,19 @@ import { estimateStringTokens } from "../tokens.js";
 import type { Runtime } from "../runtime.js";
 import { renderTimeline } from "../ui/timeline.js";
 
+function formatJourneyStatus(journey: string | null | undefined, targetTokens: number): string {
+	if (!journey) return "none yet";
+	return `~${estimateStringTokens(journey).toLocaleString()} / ${targetTokens.toLocaleString()} tok`;
+}
+
 export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void {
 	pi.registerCommand("om:status", {
 		description: "Show observational-memory status (workers, buffer, clocks)",
-		handler: async (_args: string, ctx: any) => {
-			if (!ctx.hasUI) return;
+		handler: (_args: string, ctx: any) => {
+			if (!ctx.hasUI) return Promise.resolve();
 			if (!runtime.enabled) {
 				ctx.ui.notify("om is off (use /om on to enable)", "info");
-				return;
+				return Promise.resolve();
 			}
 			runtime.ensureConfig(ctx.cwd);
 			const branch = ctx.sessionManager.getBranch() as Entry[];
@@ -33,7 +38,7 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void 
 				`  consolidator: ${runtime.consolidatorInFlight ? "running" : "idle"}`,
 				`  last compaction wait: ${runtime.lastCompactionObserverWait ?? "n/a"}`,
 				`  topic files: ${topicCount}`,
-				`  journey: ${journey ? `~${estimateStringTokens(journey).toLocaleString()} / ${runtime.config.journeyTargetTokens.toLocaleString()} tok` : "none yet"}`,
+				`  journey: ${formatJourneyStatus(journey, runtime.config.journeyTargetTokens)}`,
 				`  context: ${contextTokens != null ? contextTokens.toLocaleString() : "?"} / ${runtime.config.compactAtContextTokens.toLocaleString()} tok`,
 				`  session cost: $${costUsd.toFixed(4)} (${runs} run${runs === 1 ? "" : "s"})`,
 				runtime.lastWorkerError ? `  last error: ${runtime.lastWorkerError}` : `  last error: none`,
@@ -41,6 +46,7 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void 
 				renderTimeline(branch, runtime.config),
 			];
 			ctx.ui.notify(lines.join("\n"), "info");
+			return Promise.resolve();
 		},
 	});
 }

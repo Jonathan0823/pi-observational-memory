@@ -37,7 +37,7 @@ export function registerConsolidateCommand(pi: ExtensionAPI, runtime: Runtime): 
 			const saved = runtime.config.consolidateAtPoolTokens;
 			runtime.config.consolidateAtPoolTokens = 0;
 			try {
-				evaluateConsolidatorTrigger(pi, runtime, ctx);
+				await evaluateConsolidatorTrigger(pi, runtime, ctx);
 			} finally {
 				runtime.config.consolidateAtPoolTokens = saved;
 			}
