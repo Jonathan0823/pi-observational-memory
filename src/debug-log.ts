@@ -6,6 +6,7 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 export const DEBUG_LOG_MAX_BYTES = 10 * 1024 * 1024;
 export const DEBUG_LOG_RELATIVE_PATH = join("observational-memory", "debug.ndjson");
 export const DEBUG_LOG_SESSION_DIR_RELATIVE_PATH = join("observational-memory", "debug");
+export const DEBUG_LOG_SCHEMA_VERSION = 1;
 
 export interface DebugLogContext {
 	enabled: boolean;
@@ -49,6 +50,7 @@ export function debugLog(event: string, data: Record<string, unknown> = {}): voi
 		mkdirSync(dirname(path), { recursive: true });
 		rotateIfNeeded(path);
 		const payload = {
+			schemaVersion: DEBUG_LOG_SCHEMA_VERSION,
 			ts: new Date().toISOString(),
 			event,
 			cwd: context.cwd,

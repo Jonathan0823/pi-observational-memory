@@ -1,5 +1,8 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { registerBenchmarkMemoryGate } from "../benchmarks/extensions/observational-memory.js";
+import { registerBenchmarkLookupPolicy, registerBenchmarkMemoryGate } from "../benchmarks/extensions/observational-memory.js";
 import { BENCHMARK_REQUEST_PACED, registerBenchmarkRequestPacer } from "../benchmarks/extensions/request-pacer.js";
 import { OM_ENABLED } from "../src/ledger/types.js";
 
@@ -26,6 +29,39 @@ function fakeApi() {
 }
 
 describe("benchmark-only extension setup", () => {
+	it("adds no guidance for the unchanged policy", () => {
+		const { pi, handlers } = fakeApi();
+		registerBenchmarkLookupPolicy(pi, "unchanged");
+		expect(handlers.has("before_agent_start")).toBe(false);
+	});
+
+	it("adds conditional lookup guidance only for the guided policy", () => {
+		const { pi, handlers } = fakeApi();
+		registerBenchmarkLookupPolicy(pi, "guided");
+		const result = handlers.get("before_agent_start")![0]({ systemPrompt: "base" }, {});
+		expect(result).toMatchObject({ systemPrompt: expect.stringContaining("consult a relevant observational-memory topic") });
+	});
+
+	it("adds mandatory topic guidance only at a declared delayed-probe boundary", () => {
+		const { pi, handlers } = fakeApi();
+		registerBenchmarkLookupPolicy(pi, "mandatory");
+		const beforeAgentStart = handlers.get("before_agent_start")![0];
+		const cwd = mkdtempSync(join(tmpdir(), "om-probe-policy-"));
+		try {
+			expect(beforeAgentStart({ systemPrompt: "base" }, { cwd })).toBeUndefined();
+			mkdirSync(join(cwd, ".pi"), { recursive: true });
+			writeFileSync(join(cwd, ".pi", "benchmark-probe-active"), "session-id");
+			const result = beforeAgentStart({ systemPrompt: "base" }, { cwd });
+			expect(result).toMatchObject({
+				systemPrompt: expect.stringContaining("Before each declared delayed probe"),
+			});
+			expect((result as any).systemPrompt).toContain("Expand source history only when the topic is incomplete");
+			expect((result as any).systemPrompt).toContain("Do not invent a topic");
+		} finally {
+			rmSync(cwd, { recursive: true, force: true });
+		}
+	});
+
 	it("enables OM by appending session state when the session is off", () => {
 		const { pi, handlers, appended } = fakeApi();
 		registerBenchmarkMemoryGate(pi);

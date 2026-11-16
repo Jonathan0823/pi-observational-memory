@@ -6,7 +6,33 @@ import { StatusController } from "./ui/status-controller.js";
  * In-process orchestrator state. Event-driven only — no daemon/timer beyond the status
  * spinner. Ephemeral: rebuilt on session_start, cleared on session_shutdown.
  */
+export type DiagnosticEventName =
+	| "observer.started"
+	| "observer.completed"
+	| "observer.failed"
+	| "consolidator.started"
+	| "consolidator.completed"
+	| "consolidator.failed"
+	| "worker.cost_recorded"
+	| "compaction.rendered"
+	| "source_recall.started"
+	| "source_recall.completed"
+	| "source_recall.unavailable";
+
+export type DiagnosticSink = (event: DiagnosticEventName, data: Record<string, unknown>) => void;
+
 export class Runtime {
+	/** Opt-in, content-free lifecycle diagnostics. The default sink has no side effects. */
+	diagnosticSink: DiagnosticSink = () => {};
+
+	recordDiagnostic(event: DiagnosticEventName, data: Record<string, unknown> = {}): void {
+		try {
+			this.diagnosticSink(event, data);
+		} catch {
+			// Diagnostics must never affect memory behavior.
+		}
+	}
+
 	config: Config = { ...DEFAULTS };
 	configLoaded = false;
 

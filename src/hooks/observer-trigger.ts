@@ -4,6 +4,7 @@ import {
 	entryIndexForId,
 	foldLedger,
 	latestCoverageMarkerId,
+	poolTokens,
 	nowTimestamp,
 	rawTokensAfterIndex,
 	selectSourceSlice,
@@ -41,6 +42,7 @@ export function recordWorkerCost(
 	const cost = readWorkerCost(runCostPath(runtime.memoryRoot, runId));
 	if (!cost) return;
 	pi.appendEntry(OM_COST, { costUsd: cost.costUsd, role, runId });
+	runtime.recordDiagnostic("worker.cost_recorded", { costUsd: cost.costUsd, role, runId });
 	runtime.refreshCost(ctx.sessionManager.getEntries());
 }
 
@@ -121,6 +123,11 @@ async function dispatchObserver(
 	const controller = new AbortController();
 	const coversUpToId = slice.coversUpToId!;
 	runtime.observersInFlight.set(runId, { controller, coversUpToId });
+	runtime.recordDiagnostic("observer.started", {
+		runId,
+		chunkTokens: slice.tokens,
+		activePoolTokens: poolTokens(foldLedger(ctx.sessionManager.getBranch()).activeObservations),
+	});
 
 	// Start toast is fired as a batch by evaluateObserverTriggers after the dispatch
 	// loop, not here, so simultaneous starts coalesce into one multi-line notify.
@@ -185,6 +192,11 @@ async function dispatchObserver(
 		if (observations.length > 0) {
 			pi.appendEntry(OM_OBSERVATIONS_RECORDED, { observations, coversUpToId });
 		}
+		runtime.recordDiagnostic("observer.completed", {
+			runId,
+			observationCount: observations.length,
+			sourceRange,
+		});
 		runtime.status.workerDone(runId, observations.length);
 		runtime.refreshFooterGauges(ctx.sessionManager.getBranch(), ctx.getContextUsage?.()?.tokens ?? null);
 		if (ctx.hasUI && ctx.ui) {
@@ -199,6 +211,7 @@ async function dispatchObserver(
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		runtime.lastWorkerError = message;
+		runtime.recordDiagnostic("observer.failed", { runId, errorName: error instanceof Error ? error.name : "UnknownError" });
 		runtime.status.workerError(runId);
 		// Errors bypass the coalescer: they use a different display level and
 		// should never be merged with info lines.
