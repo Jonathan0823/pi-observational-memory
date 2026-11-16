@@ -317,6 +317,8 @@ def wait_for_consolidation(session_id: str, timeout: float) -> float:
         observers_completed = sum(event.get("event") == "observer.completed" for event in events)
         consolidators_completed = sum(event.get("event") == "consolidator.completed" for event in events)
         if observers_completed > 0 and consolidators_completed > 0:
+            remaining = max(0.0, deadline - time.monotonic())
+            wait_for_memory_idle(session_id, remaining)
             return time.monotonic() - started
         if time.monotonic() >= deadline:
             counts: dict[str, int] = {}
@@ -465,7 +467,7 @@ def main() -> int:
         help="Wait after compaction to let the provider's per-minute quota window reset",
     )
     args = parser.parse_args()
-    if args.max_cost_usd is not None and args.max_cost_usd <= 0:
+    if args.max_cost_usd is not None and (not math.isfinite(args.max_cost_usd) or args.max_cost_usd <= 0):
         parser.error("--max-cost-usd must be greater than zero")
     if args.condition == "native" and args.lookup_policy != "unchanged":
         parser.error("--lookup-policy applies only to the OM condition")
@@ -558,7 +560,15 @@ def main() -> int:
             time.sleep(args.quota_pause_seconds)
             phase_times["quota_pause_seconds"] = time.monotonic() - pause_started
 
-        _, phase_times["implementation_seconds"] = rpc.prompt(task_prompt, "implementation", args.timeout)
+        probe_marker: Path | None = None
+        if args.condition == "om" and args.lookup_policy == "mandatory":
+            probe_marker = cwd / ".pi" / "benchmark-probe-active"
+            probe_marker.write_text(session_id, encoding="utf-8")
+        try:
+            _, phase_times["implementation_seconds"] = rpc.prompt(task_prompt, "implementation", args.timeout)
+        finally:
+            if probe_marker is not None:
+                probe_marker.unlink(missing_ok=True)
         if args.memory_diagnostics and args.condition == "om":
             phase_times["final_worker_idle_seconds"] = wait_for_memory_idle(session_id, args.timeout)
         check_budget("implementation", require_worker_report=args.condition == "om")

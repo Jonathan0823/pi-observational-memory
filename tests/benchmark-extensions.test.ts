@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { registerBenchmarkLookupPolicy, registerBenchmarkMemoryGate } from "../benchmarks/extensions/observational-memory.js";
 import { BENCHMARK_REQUEST_PACED, registerBenchmarkRequestPacer } from "../benchmarks/extensions/request-pacer.js";
@@ -39,11 +42,24 @@ describe("benchmark-only extension setup", () => {
 		expect(result).toMatchObject({ systemPrompt: expect.stringContaining("consult a relevant observational-memory topic") });
 	});
 
-	it("adds mandatory topic guidance only for the mandatory policy", () => {
+	it("adds mandatory topic guidance only at a declared delayed-probe boundary", () => {
 		const { pi, handlers } = fakeApi();
 		registerBenchmarkLookupPolicy(pi, "mandatory");
-		const result = handlers.get("before_agent_start")![0]({ systemPrompt: "base" }, {});
-		expect(result).toMatchObject({ systemPrompt: expect.stringContaining("Before acting on each user request") });
+		const beforeAgentStart = handlers.get("before_agent_start")![0];
+		const cwd = mkdtempSync(join(tmpdir(), "om-probe-policy-"));
+		try {
+			expect(beforeAgentStart({ systemPrompt: "base" }, { cwd })).toBeUndefined();
+			mkdirSync(join(cwd, ".pi"), { recursive: true });
+			writeFileSync(join(cwd, ".pi", "benchmark-probe-active"), "session-id");
+			const result = beforeAgentStart({ systemPrompt: "base" }, { cwd });
+			expect(result).toMatchObject({
+				systemPrompt: expect.stringContaining("Before each declared delayed probe"),
+			});
+			expect((result as any).systemPrompt).toContain("Expand source history only when the topic is incomplete");
+			expect((result as any).systemPrompt).toContain("Do not invent a topic");
+		} finally {
+			rmSync(cwd, { recursive: true, force: true });
+		}
 	});
 
 	it("enables OM by appending session state when the session is off", () => {

@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import observationalMemory from "../../src/index.js";
 import { loadConfig } from "../../src/config.js";
@@ -71,10 +73,13 @@ export function registerBenchmarkLookupPolicy(pi: ExtensionAPI, policy: Benchmar
 	if (policy === "unchanged") return;
 	const guidance = policy === "guided"
 		? "When earlier decisions or constraints matter, consult a relevant observational-memory topic. Expand its exact source only when the topic is incomplete, uncertain, or conflicts with current evidence. Do not perform unnecessary lookups."
-		: "Before acting on each user request, read a relevant observational-memory topic if one exists. Expand source history only when the topic is incomplete, uncertain, or conflicts with current evidence. Do not invent a topic when none exists.";
-	pi.on("before_agent_start" as never, ((event: { systemPrompt?: string }) => ({
-		systemPrompt: `${event.systemPrompt ?? ""}\n\n${guidance}`,
-	})) as never);
+		: "Before each declared delayed probe, read a relevant observational-memory topic if one exists. Expand source history only when the topic is incomplete, uncertain, or conflicts with current evidence. Do not invent a topic when none exists.";
+	pi.on("before_agent_start" as never, ((event: { systemPrompt?: string }, ctx: { cwd?: string }) => {
+		if (policy === "mandatory" && (!ctx.cwd || !existsSync(join(ctx.cwd, ".pi", "benchmark-probe-active")))) {
+			return undefined;
+		}
+		return { systemPrompt: `${event.systemPrompt ?? ""}\n\n${guidance}` };
+	}) as never);
 }
 
 /** Load this instead of `src/index.ts` only in an isolated benchmark run. */

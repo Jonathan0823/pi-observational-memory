@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -18,6 +19,47 @@ class RpcStub:
 
     def request(self, _request):
         return self.responses.pop(0)
+
+
+class RunnerValidationTests(unittest.TestCase):
+    def test_rejects_non_finite_and_non_positive_cost_limits(self):
+        script = Path(__file__).resolve().parents[1] / "benchmarks" / "run_rpc_trial.py"
+        for value in ("nan", "inf", "-inf", "0", "-1"):
+            with self.subTest(value=value):
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(script),
+                        "--condition", "native",
+                        "--cwd", "/missing-worktree",
+                        "--run-dir", "/tmp/om-budget-test",
+                        "--task-file", "/missing-task",
+                        "--seed", "seed",
+                        f"--max-cost-usd={value}",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("--max-cost-usd must be greater than zero", result.stderr)
+
+    def test_consolidation_barrier_waits_for_all_current_workers_to_be_idle(self):
+        active = [
+            {"event": "observer.started"},
+            {"event": "observer.completed"},
+            {"event": "consolidator.started"},
+            {"event": "consolidator.completed"},
+            {"event": "consolidator.started"},
+        ]
+        idle = [*active, {"event": "consolidator.completed"}]
+        trace_path = Path("/tmp/om-lifecycle-trace.ndjson")
+        with patch.object(run_rpc_trial, "memory_trace_path", return_value=trace_path), patch.object(
+            run_rpc_trial, "read_memory_events", side_effect=[active, idle]
+        ) as read_events:
+            elapsed = run_rpc_trial.wait_for_consolidation("session", 5)
+        self.assertGreaterEqual(elapsed, 0)
+        self.assertEqual(read_events.call_count, 2)
 
 
 class TopicReadCollectionTests(unittest.TestCase):
