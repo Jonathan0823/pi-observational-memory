@@ -36,6 +36,59 @@ function unavailable(reason: string): ToolText {
 	return { content: [{ type: "text", text: `Source unavailable: ${reason}` }], details: { available: false, reason } };
 }
 
+function executeSourceRecall(
+	params: RecallSourceInput,
+	runtime: Runtime,
+	sessionsRoot: string,
+	ctx: ExtensionContext,
+): ToolText {
+	runtime.recordDiagnostic("source_recall.started", {
+		sourceRange: params.sourceRange,
+		requestedChars: params.maxChars ?? DEFAULT_SOURCE_RECALL_CHARS,
+		continued: Boolean(params.cursor),
+	});
+	if (!runtime.enabled || !runtime.memoryRoot) {
+		const reason = "observational memory is not active for this session.";
+		runtime.recordDiagnostic("source_recall.unavailable", { sourceRange: params.sourceRange, reason: "memory_inactive" });
+		return unavailable(reason);
+	}
+
+	const result = readSourceRangePage(
+		ctx.sessionManager,
+		runtime.memoryRoot,
+		sessionsRoot,
+		params.sourceRange,
+		params.cursor as SourceRecallCursor | undefined,
+		params.maxChars ?? DEFAULT_SOURCE_RECALL_CHARS,
+	);
+	if (!result.available) {
+		runtime.recordDiagnostic("source_recall.unavailable", {
+			sourceRange: params.sourceRange,
+			reason: result.reason,
+		});
+		return unavailable(result.reason);
+	}
+
+	const cursorNotice = result.page.nextCursor
+		? `\n\nMore source is available. Continue with cursor ${JSON.stringify(result.page.nextCursor)}.`
+		: "";
+	runtime.recordDiagnostic("source_recall.completed", {
+		sourceRange: params.sourceRange,
+		returnedEntryCount: result.page.returnedEntryIds.length,
+		returnedChars: result.page.text.length,
+		hasNextPage: Boolean(result.page.nextCursor),
+	});
+	return {
+		content: [{ type: "text", text: result.page.text + cursorNotice }],
+		details: {
+			available: true,
+			sourceRange: params.sourceRange,
+			returnedEntryIds: result.page.returnedEntryIds,
+			nextCursor: result.page.nextCursor,
+		},
+	};
+}
+
 /** Register a read-only tool that resolves only exact references already stored in this session's topic files. */
 export function registerSourceRecallTool(
 	pi: ExtensionAPI,
@@ -50,53 +103,12 @@ export function registerSourceRecallTool(
 			"Pass its sessionId/firstEntryId/lastEntryId; use a returned continuation cursor to expand the same range. " +
 			"This is read-only and cannot search unrelated sessions or ranges.",
 		parameters: RecallSourceSchema,
-		async execute(_id: string, params: RecallSourceInput, _signal: AbortSignal | undefined, _onUpdate: unknown, ctx: ExtensionContext): Promise<ToolText> {
-			runtime.recordDiagnostic("source_recall.started", {
-				sourceRange: params.sourceRange,
-				requestedChars: params.maxChars ?? DEFAULT_SOURCE_RECALL_CHARS,
-				continued: Boolean(params.cursor),
-			});
-			if (!runtime.enabled || !runtime.memoryRoot) {
-				runtime.recordDiagnostic("source_recall.unavailable", {
-					sourceRange: params.sourceRange,
-					reason: "memory_inactive",
-				});
-				return unavailable("observational memory is not active for this session.");
+		execute(_id: string, params: RecallSourceInput, _signal: AbortSignal | undefined, _onUpdate: unknown, ctx: ExtensionContext): Promise<ToolText> {
+			try {
+				return Promise.resolve(executeSourceRecall(params, runtime, sessionsRoot, ctx));
+			} catch (error) {
+				return Promise.reject(error);
 			}
-			const result = readSourceRangePage(
-				ctx.sessionManager,
-				runtime.memoryRoot,
-				sessionsRoot,
-				params.sourceRange,
-				params.cursor as SourceRecallCursor | undefined,
-				params.maxChars ?? DEFAULT_SOURCE_RECALL_CHARS,
-			);
-			if (!result.available) {
-				runtime.recordDiagnostic("source_recall.unavailable", {
-					sourceRange: params.sourceRange,
-					reason: result.reason,
-				});
-				return unavailable(result.reason);
-			}
-
-			const cursorNotice = result.page.nextCursor
-				? `\n\nMore source is available. Continue with cursor ${JSON.stringify(result.page.nextCursor)}.`
-				: "";
-			runtime.recordDiagnostic("source_recall.completed", {
-				sourceRange: params.sourceRange,
-				returnedEntryCount: result.page.returnedEntryIds.length,
-				returnedChars: result.page.text.length,
-				hasNextPage: Boolean(result.page.nextCursor),
-			});
-			return {
-				content: [{ type: "text", text: result.page.text + cursorNotice }],
-				details: {
-					available: true,
-					sourceRange: params.sourceRange,
-					returnedEntryIds: result.page.returnedEntryIds,
-					nextCursor: result.page.nextCursor,
-				},
-			};
 		},
 	});
 }

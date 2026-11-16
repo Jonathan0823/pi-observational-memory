@@ -112,11 +112,56 @@ function entriesInSourceRange(
 	const reversed: SessionEntry[] = [];
 	while (cursor) {
 		reversed.push(cursor);
-		if (cursor.id === first.id) return reversed.reverse().filter((entry) => isSourceEntry(entry as Entry));
+		if (cursor.id === first.id) {
+			const ordered: SessionEntry[] = [];
+			for (let index = reversed.length - 1; index >= 0; index--) {
+				const entry = reversed[index];
+				if (entry && isSourceEntry(entry as Entry)) ordered.push(entry);
+			}
+			return ordered;
+		}
 		if (!cursor.parentId) break;
 		cursor = byId.get(cursor.parentId);
 	}
 	return undefined;
+}
+
+type PageBuilder = { text: string; returnedEntryIds: string[]; maxChars: number };
+type PageStep = { continue: true } | { continue: false; nextCursor?: SourceRecallCursor };
+
+function appendPageEntry(
+	rendered: Array<{ entry: SessionEntry; text: string }>,
+	index: number,
+	startIndex: number,
+	startOffset: number,
+	page: PageBuilder,
+): PageStep {
+	const { entry, text: entryText } = rendered[index];
+	const offset = index === startIndex ? startOffset : 0;
+	if (offset === entryText.length) return { continue: true };
+	if (page.returnedEntryIds.length >= MAX_SOURCE_RECALL_ENTRIES) {
+		return { continue: false, nextCursor: { entryId: entry.id, characterOffset: offset } };
+	}
+
+	const separator = page.text.length > 0 ? "\n\n" : "";
+	const continuation = offset > 0 ? `[continued source entry ${entry.id} at character ${offset}]\n` : "";
+	const prefix = separator + continuation;
+	const availableChars = page.maxChars - page.text.length - prefix.length;
+	if (availableChars <= 0) {
+		return { continue: false, nextCursor: { entryId: entry.id, characterOffset: offset } };
+	}
+
+	const excerpt = entryText.slice(offset, offset + availableChars);
+	page.text += prefix + excerpt;
+	page.returnedEntryIds.push(entry.id);
+	if (offset + excerpt.length < entryText.length) {
+		return { continue: false, nextCursor: { entryId: entry.id, characterOffset: offset + excerpt.length } };
+	}
+	const following = rendered[index + 1];
+	if (following && page.text.length >= page.maxChars) {
+		return { continue: false, nextCursor: { entryId: following.entry.id, characterOffset: 0 } };
+	}
+	return { continue: true };
 }
 
 function sourcePage(entries: SessionEntry[], cursor: SourceRecallCursor | undefined, requestedChars: number): SourceRecallPage | undefined {
@@ -135,45 +180,21 @@ function sourcePage(entries: SessionEntry[], cursor: SourceRecallCursor | undefi
 		if (!Number.isInteger(startOffset) || startOffset < 0 || startOffset > rendered[startIndex].text.length) return undefined;
 	}
 
-	const maxChars = Math.min(MAX_SOURCE_RECALL_CHARS, Math.max(MIN_SOURCE_RECALL_CHARS, requestedChars));
-	let text = "";
+	const page: PageBuilder = {
+		text: "",
+		returnedEntryIds: [],
+		maxChars: Math.min(MAX_SOURCE_RECALL_CHARS, Math.max(MIN_SOURCE_RECALL_CHARS, requestedChars)),
+	};
 	let nextCursor: SourceRecallCursor | undefined;
-	const returnedEntryIds: string[] = [];
 
 	for (let index = startIndex; index < rendered.length; index++) {
-		const { entry, text: entryText } = rendered[index];
-		const offset = index === startIndex ? startOffset : 0;
-		if (offset === entryText.length) continue;
-		if (returnedEntryIds.length >= MAX_SOURCE_RECALL_ENTRIES) {
-			nextCursor = { entryId: entry.id, characterOffset: offset };
-			break;
-		}
-
-		const separator = text.length > 0 ? "\n\n" : "";
-		const continuation = offset > 0 ? `[continued source entry ${entry.id} at character ${offset}]\n` : "";
-		const prefix = separator + continuation;
-		const availableChars = maxChars - text.length - prefix.length;
-		if (availableChars <= 0) {
-			nextCursor = { entryId: entry.id, characterOffset: offset };
-			break;
-		}
-
-		const excerpt = entryText.slice(offset, offset + availableChars);
-		text += prefix + excerpt;
-		returnedEntryIds.push(entry.id);
-		if (offset + excerpt.length < entryText.length) {
-			nextCursor = { entryId: entry.id, characterOffset: offset + excerpt.length };
-			break;
-		}
-
-		const following = rendered[index + 1];
-		if (following && text.length >= maxChars) {
-			nextCursor = { entryId: following.entry.id, characterOffset: 0 };
-			break;
-		}
+		const step = appendPageEntry(rendered, index, startIndex, startOffset, page);
+		if (step.continue) continue;
+		nextCursor = step.nextCursor;
+		break;
 	}
 
-	return { text, returnedEntryIds, ...(nextCursor ? { nextCursor } : {}) };
+	return { text: page.text, returnedEntryIds: page.returnedEntryIds, ...(nextCursor ? { nextCursor } : {}) };
 }
 
 /** Read one exact, topic-file-stored source range with bounded output and an explicit continuation cursor. */

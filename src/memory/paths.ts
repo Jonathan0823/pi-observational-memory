@@ -50,7 +50,8 @@ export function readJourney(root: string): string | undefined {
 	if (!existsSync(path)) return undefined;
 	try {
 		const body = readFileSync(path, "utf-8").trim();
-		return body.length > 0 ? body : undefined;
+		if (body.length === 0) return undefined;
+		return body;
 	} catch {
 		return undefined;
 	}
@@ -141,6 +142,10 @@ export function listTopics(root: string): Topic[] {
 		const { front } = parseFrontMatter(content);
 		topics.push({ ...front, path: relative(cwd, join(root, filename)), filename });
 	}
-	topics.sort((a, b) => (a.filename < b.filename ? -1 : a.filename > b.filename ? 1 : 0));
+	topics.sort((a, b) => {
+		if (a.filename < b.filename) return -1;
+		if (a.filename > b.filename) return 1;
+		return 0;
+	});
 	return topics;
 }
