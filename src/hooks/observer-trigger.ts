@@ -18,6 +18,7 @@ import {
 import type { Runtime } from "../runtime.js";
 import { buildWorkerArgv, buildWorkerEnv, spawnWorker } from "../spawn/launch.js";
 import { readObserverResult, readWorkerCost, runCostPath, runResultPath } from "../spawn/runs.js";
+import { throwIfWorkerFailed } from "./worker-exit.js";
 
 type TriggerCtx = {
 	hasUI: boolean;
@@ -177,9 +178,7 @@ async function dispatchObserver(
 		const exit = await workerLauncher({ argv, cwd: runtime.memoryRoot, env, signal: controller.signal });
 		// Capture cost before the exit-code check so a partial run's spend is still recorded.
 		recordWorkerCost(pi, runtime, ctx, "observer", runId);
-		if (exit.code !== 0) {
-			throw new Error(`observer exited with code ${exit.code}${exit.stderr ? `: ${exit.stderr.trim().slice(0, 200)}` : ""}`);
-		}
+		throwIfWorkerFailed("observer", exit);
 
 		const result = readObserverResult(runResultPath(runtime.memoryRoot, runId));
 		const branch = ctx.sessionManager.getBranch();
