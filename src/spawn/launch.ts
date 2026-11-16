@@ -55,9 +55,14 @@ export function buildWorkerArgv(opts: {
 		modelArg(opts.model),
 	];
 	if (opts.model.thinking) args.push("--thinking", opts.model.thinking);
-	args.push("-e", opts.agentExtensionPath ?? AGENT_EXTENSION_PATH);
-	args.push("-n", opts.sessionName);
-	args.push("-p", opts.kickoffPrompt);
+	args.push(
+		"-e",
+		opts.agentExtensionPath ?? AGENT_EXTENSION_PATH,
+		"-n",
+		opts.sessionName,
+		"-p",
+		opts.kickoffPrompt,
+	);
 	return [pi.command, ...args];
 }
 
