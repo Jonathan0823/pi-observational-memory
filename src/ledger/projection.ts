@@ -50,6 +50,31 @@ function isCoveredAtOrBefore(
 	return index >= 0 && boundary >= 0 && index <= boundary;
 }
 
+function foldRecordedEntry(
+	entry: Entry & { data: { observations: Observation[]; coversUpToId: string } },
+	indexes: Map<string, number>,
+	boundary: number,
+	seen: Set<string>,
+	observations: Observation[],
+): void {
+	if (!isCoveredAtOrBefore(entry, indexes, boundary)) return;
+	for (const observation of entry.data.observations) {
+		if (seen.has(observation.timestamp)) continue;
+		seen.add(observation.timestamp);
+		observations.push(observation);
+	}
+}
+
+function foldDroppedEntry(
+	entry: Entry & { data: { observationTimestamps: string[]; coversUpToId: string } },
+	indexes: Map<string, number>,
+	boundary: number,
+	dropped: Set<string>,
+): void {
+	if (!isCoveredAtOrBefore(entry, indexes, boundary)) return;
+	for (const timestamp of entry.data.observationTimestamps) dropped.add(timestamp);
+}
+
 /**
  * Fold active observations whose source coverage lies at-or-before `boundary`, in
  * first-valid-record-wins order, with folded drops applied. Observations whose source lies
@@ -63,16 +88,12 @@ function foldProjection(entries: Entry[], boundary: ProjectionBoundary): Project
 	const dropped = new Set<string>();
 
 	for (const entry of entries) {
-		if (isObservationsRecordedEntry(entry) && isCoveredAtOrBefore(entry, indexes, boundaryIdx)) {
-			for (const observation of entry.data.observations) {
-				if (seen.has(observation.timestamp)) continue;
-				seen.add(observation.timestamp);
-				observations.push(observation);
-			}
+		if (isObservationsRecordedEntry(entry)) {
+			foldRecordedEntry(entry, indexes, boundaryIdx, seen, observations);
 			continue;
 		}
-		if (isObservationsDroppedEntry(entry) && isCoveredAtOrBefore(entry, indexes, boundaryIdx)) {
-			for (const timestamp of entry.data.observationTimestamps) dropped.add(timestamp);
+		if (isObservationsDroppedEntry(entry)) {
+			foldDroppedEntry(entry, indexes, boundaryIdx, dropped);
 		}
 	}
 
