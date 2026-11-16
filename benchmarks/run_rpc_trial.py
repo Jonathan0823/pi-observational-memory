@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import queue
+import re
 import shutil
 import subprocess
 import sys
@@ -181,8 +183,9 @@ def collect_worker_stats(cwd: Path, session_id: str) -> dict[str, Any]:
     sessions: list[dict[str, Any]] = []
     totals = {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
     cost = 0.0
+    cost_reported = False
     if not session_dir.is_dir():
-        return {"sessions": sessions, "tokens": totals, "costUsd": cost}
+        return {"sessions": sessions, "tokens": totals, "costUsd": cost, "costReported": cost_reported}
 
     for path in session_dir.rglob("*.jsonl"):
         try:
@@ -193,6 +196,7 @@ def collect_worker_stats(cwd: Path, session_id: str) -> dict[str, Any]:
                 name = ""
                 usage_totals = {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
                 session_cost = 0.0
+                session_cost_reported = False
                 for line in stream:
                     try:
                         entry = json.loads(line)
@@ -208,19 +212,23 @@ def collect_worker_stats(cwd: Path, session_id: str) -> dict[str, Any]:
                         value = usage.get(key, 0)
                         if isinstance(value, (int, float)) and value >= 0:
                             usage_totals[key] += int(value)
-                    amount = usage.get("cost", {}).get("total", 0)
+                    amount = usage.get("cost", {}).get("total")
                     if isinstance(amount, (int, float)) and amount >= 0:
                         session_cost += float(amount)
-                sessions.append({"file": str(path), "name": name, "tokens": usage_totals, "costUsd": session_cost})
+                        session_cost_reported = True
+                sessions.append({"file": str(path), "name": name, "tokens": usage_totals, "costUsd": session_cost, "costReported": session_cost_reported})
                 for key, value in usage_totals.items():
                     totals[key] += value
                 cost += session_cost
+                cost_reported = cost_reported or session_cost_reported
         except (OSError, ValueError, TypeError):
             continue
-    return {"sessions": sessions, "tokens": totals, "costUsd": cost}
+    return {"sessions": sessions, "tokens": totals, "costUsd": cost, "costReported": cost_reported}
 
 
-def configure_worker_models(cwd: Path, model_id: str, observer_thinking: str, consolidator_thinking: str) -> None:
+def configure_worker_models(
+    cwd: Path, model_id: str, observer_thinking: str, consolidator_thinking: str, memory_diagnostics: bool = False
+) -> None:
     if "/" not in model_id:
         raise ValueError("Worker model must be provider/modelId")
     provider, model = model_id.split("/", 1)
@@ -240,7 +248,182 @@ def configure_worker_models(cwd: Path, model_id: str, observer_thinking: str, co
         raise ValueError("observational-memory.models must be an object")
     models["observer"] = {"provider": provider, "id": model, "thinking": observer_thinking}
     models["consolidator"] = {"provider": provider, "id": model, "thinking": consolidator_thinking}
+    if memory_diagnostics:
+        om["debugLog"] = True
     settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+
+
+def safe_trace_session_id(session_id: str) -> str | None:
+    sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", session_id.strip()).strip("_")[:128]
+    return sanitized if re.search(r"[A-Za-z0-9]", sanitized) else None
+
+
+def memory_trace_path(session_id: str) -> Path | None:
+    safe_id = safe_trace_session_id(session_id)
+    if safe_id is None:
+        return None
+    agent_dir = Path(os.environ.get("PI_CODING_AGENT_DIR", Path.home() / ".pi" / "agent")).expanduser()
+    return agent_dir / "observational-memory" / "debug" / f"{safe_id}.ndjson"
+
+
+def read_memory_events(path: Path) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    if not path.is_file():
+        return events
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(event, dict):
+            events.append(event)
+    return events
+
+
+def lifecycle_event_counts(session_id: str) -> dict[str, int]:
+    path = memory_trace_path(session_id)
+    if path is None:
+        return {}
+    counts: dict[str, int] = {}
+    for event in read_memory_events(path):
+        name = event.get("event")
+        if isinstance(name, str):
+            counts[name] = counts.get(name, 0) + 1
+    return counts
+
+
+def wait_for_memory_idle(session_id: str, timeout: float) -> float:
+    started = time.monotonic()
+    deadline = started + timeout
+    while True:
+        counts = lifecycle_event_counts(session_id)
+        observer_active = counts.get("observer.started", 0) - counts.get("observer.completed", 0) - counts.get("observer.failed", 0)
+        consolidator_active = counts.get("consolidator.started", 0) - counts.get("consolidator.completed", 0) - counts.get("consolidator.failed", 0)
+        if observer_active <= 0 and consolidator_active <= 0:
+            return time.monotonic() - started
+        if time.monotonic() >= deadline:
+            raise TimeoutError(f"Memory workers did not become idle: {counts}")
+        time.sleep(min(0.25, max(0.01, deadline - time.monotonic())))
+
+
+def wait_for_consolidation(session_id: str, timeout: float) -> float:
+    path = memory_trace_path(session_id)
+    if path is None:
+        raise RuntimeError("Cannot resolve diagnostics path for this session id")
+    started = time.monotonic()
+    deadline = started + timeout
+    while True:
+        events = read_memory_events(path)
+        observers_completed = sum(event.get("event") == "observer.completed" for event in events)
+        consolidators_completed = sum(event.get("event") == "consolidator.completed" for event in events)
+        if observers_completed > 0 and consolidators_completed > 0:
+            return time.monotonic() - started
+        if time.monotonic() >= deadline:
+            counts: dict[str, int] = {}
+            for event in events:
+                name = event.get("event")
+                if isinstance(name, str):
+                    counts[name] = counts.get(name, 0) + 1
+            raise TimeoutError(f"Memory lifecycle did not complete before compaction: {counts}")
+        time.sleep(min(0.25, max(0.01, deadline - time.monotonic())))
+
+
+def collect_memory_trace(run_dir: Path, session_id: str) -> dict[str, Any]:
+    source = memory_trace_path(session_id)
+    if source is None:
+        return {"available": False, "reason": "invalid_session_id", "eventCounts": {}}
+    if not source.is_file():
+        return {"available": False, "reason": "trace_file_missing", "eventCounts": {}}
+    destination = run_dir / "memory-trace.ndjson"
+    shutil.copy2(source, destination)
+    counts: dict[str, int] = {}
+    schema_versions: set[int] = set()
+    for event in read_memory_events(destination):
+        name = event.get("event")
+        if isinstance(name, str):
+            counts[name] = counts.get(name, 0) + 1
+        version = event.get("schemaVersion")
+        if isinstance(version, int):
+            schema_versions.add(version)
+    return {"available": True, "path": "memory-trace.ndjson", "eventCounts": counts, "schemaVersions": sorted(schema_versions)}
+
+
+def is_session_topic_path(path_value: Any, cwd: Path, session_id: str) -> bool:
+    if not isinstance(path_value, str) or not path_value.strip():
+        return False
+    root = (cwd / ".memory" / session_id).resolve()
+    candidate = Path(path_value)
+    try:
+        resolved = (candidate if candidate.is_absolute() else cwd / candidate).resolve()
+        if resolved == root or root not in resolved.parents or resolved.suffix != ".md":
+            return False
+        relative = resolved.relative_to(root)
+        return ".runs" not in relative.parts
+    except (OSError, RuntimeError):
+        return False
+
+
+def trial_usage(
+    rpc: PiRpc, cwd: Path, session_id: str, condition: str, require_worker_report: bool = True
+) -> dict[str, Any]:
+    stats_response = rpc.request({"id": f"budget-stats-{uuid.uuid4().hex[:8]}", "type": "get_session_stats"})
+    stats = stats_response.get("data", {})
+    main_cost = stats.get("cost")
+    if isinstance(main_cost, bool) or not isinstance(main_cost, (int, float)) or not math.isfinite(main_cost) or main_cost < 0:
+        raise RuntimeError("Main-session cost is unavailable; refusing to continue under a spend cap")
+
+    entries_response = rpc.request({"id": f"budget-entries-{uuid.uuid4().hex[:8]}", "type": "get_entries"})
+    entries = entries_response.get("data", {}).get("entries", [])
+    worker_cost_entries = [
+        entry for entry in entries
+        if entry.get("customType") == "om.cost"
+        and isinstance(entry.get("data", {}).get("costUsd"), (int, float))
+        and not isinstance(entry.get("data", {}).get("costUsd"), bool)
+        and math.isfinite(entry.get("data", {}).get("costUsd"))
+        and entry.get("data", {}).get("costUsd") >= 0
+    ]
+    worker_ledger_cost = sum(
+        float(entry.get("data", {}).get("costUsd", 0) or 0)
+        for entry in worker_cost_entries
+    )
+    worker_stats = collect_worker_stats(cwd, session_id) if condition == "om" else {"sessions": [], "costUsd": 0.0, "costReported": True}
+    worker_cost_reported = bool(worker_cost_entries) or bool(worker_stats.get("costReported"))
+    if condition == "om" and require_worker_report and not worker_cost_reported:
+        raise RuntimeError("OM worker cost is unavailable; refusing to continue under a spend cap")
+    worker_cost = max(worker_ledger_cost, float(worker_stats.get("costUsd", 0) or 0))
+    return {
+        "mainCostUsd": float(main_cost),
+        "workerLedgerCostUsd": worker_ledger_cost,
+        "workerSessionCostUsd": float(worker_stats.get("costUsd", 0) or 0),
+        "workerCostUsd": worker_cost,
+        "totalCostUsd": float(main_cost) + worker_cost,
+        "mainCostReported": True,
+        "workerCostReported": worker_cost_reported,
+    }
+
+
+def collect_topic_reads(event_log: Path, cwd: Path, session_id: str) -> list[dict[str, Any]]:
+    active: dict[str, dict[str, Any]] = {}
+    completed: list[dict[str, Any]] = []
+    if not event_log.is_file():
+        return completed
+    for line in event_log.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        call_id = event.get("toolCallId")
+        if event.get("type") == "tool_execution_start" and event.get("toolName") == "read":
+            args = event.get("args", {})
+            path_value = args.get("path") if isinstance(args, dict) else None
+            if isinstance(call_id, str) and is_session_topic_path(path_value, cwd, session_id):
+                active[call_id] = {"toolCallId": call_id, "path": str(path_value)}
+        elif event.get("type") == "tool_execution_end" and isinstance(call_id, str) and call_id in active:
+            is_error = event.get("isError")
+            outcome = "failed" if is_error is True else "succeeded" if is_error is False else "unverified"
+            completed.append({**active.pop(call_id), "isError": is_error if isinstance(is_error, bool) else None, "outcome": outcome})
+    completed.extend({**record, "isError": None, "outcome": "incomplete", "incomplete": True} for record in active.values())
+    return completed
 
 
 def read_prompts(args: argparse.Namespace) -> list[str]:
@@ -258,6 +441,7 @@ def read_prompts(args: argparse.Namespace) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--condition", choices=("native", "om"), required=True)
+    parser.add_argument("--lookup-policy", choices=("unchanged", "guided", "mandatory"), default="unchanged")
     parser.add_argument("--cwd", type=Path, required=True, help="Isolated task worktree")
     parser.add_argument("--run-dir", type=Path, required=True, help="Directory for session and trial artifacts")
     parser.add_argument("--task-file", type=Path, required=True, help="Final implementation prompt")
@@ -274,12 +458,17 @@ def main() -> int:
     parser.add_argument("--pi-cli", type=Path, help="Pi CLI entrypoint; defaults to the managed Pi installation")
     parser.add_argument("--request-interval-seconds", type=float, default=0)
     parser.add_argument("--memory-diagnostics", action="store_true", help="Record OM trigger/token diagnostics (adds benchmark-only ledger entries)")
+    parser.add_argument("--max-cost-usd", type=float, default=None, help="Stop before the next phase once reported trial spend reaches this limit")
     parser.add_argument("--timeout", type=int, default=1800, help="Per-phase timeout in seconds")
     parser.add_argument(
         "--quota-pause-seconds", type=float, default=0,
         help="Wait after compaction to let the provider's per-minute quota window reset",
     )
     args = parser.parse_args()
+    if args.max_cost_usd is not None and args.max_cost_usd <= 0:
+        parser.error("--max-cost-usd must be greater than zero")
+    if args.condition == "native" and args.lookup_policy != "unchanged":
+        parser.error("--lookup-policy applies only to the OM condition")
 
     cwd = args.cwd.resolve()
     run_dir = args.run_dir.resolve()
@@ -299,6 +488,7 @@ def main() -> int:
         args.worker_model or args.model,
         args.observer_thinking,
         args.consolidator_thinking,
+        memory_diagnostics=args.memory_diagnostics and args.condition == "om",
     )
     pacing_dir = run_dir / "request-pacing"
     pacer_extension = args.pacer_extension.resolve()
@@ -309,6 +499,7 @@ def main() -> int:
         "--model", args.model, "--thinking", args.thinking,
     ]
     env = os.environ.copy()
+    env["PI_BENCHMARK_MEMORY_POLICY"] = args.lookup_policy
     if args.memory_diagnostics:
         env["PI_BENCHMARK_MEMORY_DIAGNOSTICS"] = "1"
     if args.request_interval_seconds > 0:
@@ -330,15 +521,35 @@ def main() -> int:
 
     rpc = PiRpc(command, cwd, run_dir / "rpc-events.jsonl", env)
     phase_times: dict[str, float] = {}
+    phase_costs: dict[str, dict[str, Any]] = {}
+    latest_usage: dict[str, Any] | None = None
     started = time.monotonic()
+
+    def check_budget(phase: str, require_worker_report: bool = False) -> None:
+        nonlocal latest_usage
+        if args.max_cost_usd is None:
+            return
+        latest_usage = trial_usage(rpc, cwd, session_id, args.condition, require_worker_report=require_worker_report)
+        phase_costs[phase] = latest_usage
+        if latest_usage["totalCostUsd"] >= args.max_cost_usd:
+            raise RuntimeError(
+                f"Spend limit reached after {phase}: ${latest_usage['totalCostUsd']:.6f} >= ${args.max_cost_usd:.6f}"
+            )
+
     try:
         for index, seed in enumerate(seeds, start=1):
             _, elapsed = rpc.prompt(seed, f"seed-{index}", args.timeout)
             phase_times[f"seed_{index}_seconds"] = elapsed
+            check_budget(f"seed_{index}")
+
+        if args.memory_diagnostics and args.condition == "om":
+            phase_times["memory_lifecycle_barrier_seconds"] = wait_for_consolidation(session_id, args.timeout)
+            check_budget("pre_compaction", require_worker_report=True)
 
         compact_started = time.monotonic()
         compact = rpc.request({"id": "benchmark-compact", "type": "compact"}, args.timeout)
         phase_times["compact_seconds"] = time.monotonic() - compact_started
+        check_budget("compaction", require_worker_report=args.condition == "om")
         if not compact.get("success"):
             raise RuntimeError(f"Compaction did not complete: {compact.get('error', compact)}")
 
@@ -348,6 +559,9 @@ def main() -> int:
             phase_times["quota_pause_seconds"] = time.monotonic() - pause_started
 
         _, phase_times["implementation_seconds"] = rpc.prompt(task_prompt, "implementation", args.timeout)
+        if args.memory_diagnostics and args.condition == "om":
+            phase_times["final_worker_idle_seconds"] = wait_for_memory_idle(session_id, args.timeout)
+        check_budget("implementation", require_worker_report=args.condition == "om")
         stats_response = rpc.request({"id": "benchmark-stats", "type": "get_session_stats"}, args.timeout)
         entries_response = rpc.request({"id": "benchmark-entries", "type": "get_entries"}, args.timeout)
         entries = entries_response.get("data", {}).get("entries", [])
@@ -368,8 +582,11 @@ def main() -> int:
         ]
         pacing = read_pacing_metrics(pacing_dir)
         worker_stats = collect_worker_stats(cwd, session_id) if args.condition == "om" else {"sessions": [], "tokens": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}, "costUsd": 0.0}
+        memory_trace = collect_memory_trace(run_dir, session_id) if args.memory_diagnostics and args.condition == "om" else {"available": False, "reason": "disabled", "eventCounts": {}}
+        topic_reads = collect_topic_reads(run_dir / "rpc-events.jsonl", cwd, session_id)
         result = {
             "condition": args.condition,
+            "lookupPolicy": args.lookup_policy,
             "model": args.model,
             "thinking": args.thinking,
             "sessionId": session_id,
@@ -381,6 +598,8 @@ def main() -> int:
             "requestPacing": pacing,
             "compaction": compact.get("data", {}),
             "stats": stats_response.get("data", {}),
+            "costAccounting": {"limitUsd": args.max_cost_usd, "phaseUsage": phase_costs, "finalUsage": latest_usage},
+            "memoryDiagnostics": {"lifecycleTrace": memory_trace, "topicReads": topic_reads},
             "observationalMemory": {
                 "workerCostUsd": worker_cost,
                 "workerSessions": worker_stats["sessions"],
@@ -400,11 +619,14 @@ def main() -> int:
     except Exception as error:
         failure = {
             "condition": args.condition,
+            "lookupPolicy": args.lookup_policy,
             "model": args.model,
             "sessionId": session_id,
             "elapsedSeconds": time.monotonic() - started,
             "activeElapsedSeconds": time.monotonic() - started - phase_times.get("quota_pause_seconds", 0) - read_pacing_metrics(pacing_dir)["mainDelaySeconds"],
             "phaseSeconds": phase_times,
+            "phaseCostUsage": phase_costs,
+            "latestCostUsage": latest_usage,
             "requestPacing": read_pacing_metrics(pacing_dir),
             "error": str(error),
         }

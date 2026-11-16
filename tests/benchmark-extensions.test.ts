@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { registerBenchmarkMemoryGate } from "../benchmarks/extensions/observational-memory.js";
+import { registerBenchmarkLookupPolicy, registerBenchmarkMemoryGate } from "../benchmarks/extensions/observational-memory.js";
 import { BENCHMARK_REQUEST_PACED, registerBenchmarkRequestPacer } from "../benchmarks/extensions/request-pacer.js";
 import { OM_ENABLED } from "../src/ledger/types.js";
 
@@ -26,6 +26,26 @@ function fakeApi() {
 }
 
 describe("benchmark-only extension setup", () => {
+	it("adds no guidance for the unchanged policy", () => {
+		const { pi, handlers } = fakeApi();
+		registerBenchmarkLookupPolicy(pi, "unchanged");
+		expect(handlers.has("before_agent_start")).toBe(false);
+	});
+
+	it("adds conditional lookup guidance only for the guided policy", () => {
+		const { pi, handlers } = fakeApi();
+		registerBenchmarkLookupPolicy(pi, "guided");
+		const result = handlers.get("before_agent_start")![0]({ systemPrompt: "base" }, {});
+		expect(result).toMatchObject({ systemPrompt: expect.stringContaining("consult a relevant observational-memory topic") });
+	});
+
+	it("adds mandatory topic guidance only for the mandatory policy", () => {
+		const { pi, handlers } = fakeApi();
+		registerBenchmarkLookupPolicy(pi, "mandatory");
+		const result = handlers.get("before_agent_start")![0]({ systemPrompt: "base" }, {});
+		expect(result).toMatchObject({ systemPrompt: expect.stringContaining("Before acting on each user request") });
+	});
+
 	it("enables OM by appending session state when the session is off", () => {
 		const { pi, handlers, appended } = fakeApi();
 		registerBenchmarkMemoryGate(pi);
